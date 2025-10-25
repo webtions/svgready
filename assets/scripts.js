@@ -70,3 +70,94 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (text) copyToClipboard(text.trim(), button);
 	});
 });
+
+
+// AJAX CONVERSION
+const form = document.querySelector('.input-section form');
+const outputSection = document.querySelector('.output-section');
+
+if (form && outputSection) {
+	form.addEventListener('submit', async (e) => {
+		e.preventDefault();
+
+		const formData = new FormData(form);
+		outputSection.classList.remove('has-error');
+		outputSection.innerHTML = '<div class="empty-state"><p>Processing...</p></div>';
+
+		try {
+			const res = await fetch('ajax.php', {
+				method: 'POST',
+				body: formData,
+			});
+
+			const data = await res.json();
+			if (data.error) {
+				outputSection.classList.add('has-error');
+				outputSection.innerHTML = `
+					<div class="error-state" role="alert">
+						<span class="error-icon" aria-hidden="true"></span>
+						<h3>Something went wrong</h3>
+						<p>${data.error}</p>
+					</div>
+				`;
+				return;
+			}
+
+			const r = data.results;
+			outputSection.classList.remove('has-error');
+
+			let html = `
+				<article class="result-block">
+					<h4>SVG Preview</h4>
+					<div class="preview-container" role="img">${r.preview}</div>
+				</article>
+				<article class="result-block">
+					<h4>Normalized SVG
+						<button class="copy-btn" data-copy="${encodeURIComponent(r.normalized)}">Copy</button>
+					</h4>
+					<pre><code>${r.normalized}</code></pre>
+				</article>
+				<article class="result-block">
+					<h4>Percent-encoded Data URI
+						<button class="copy-btn" data-copy="${encodeURIComponent(r.data_uri_css)}">Copy</button>
+					</h4>
+					<pre><code>${r.data_uri_css}</code></pre>
+				</article>
+				<article class="result-block">
+					<h4>Background Image CSS
+						<button class="copy-btn" data-copy="${encodeURIComponent(r.bg_snippet)}">Copy</button>
+					</h4>
+					<pre><code>${r.bg_snippet}</code></pre>
+				</article>
+				<article class="result-block">
+					<h4>Mask Image CSS
+						<button class="copy-btn" data-copy="${encodeURIComponent(r.mask_snippet)}">Copy</button>
+					</h4>
+					<pre><code>${r.mask_snippet}</code></pre>
+				</article>
+			`;
+
+			if (r.show_base64 && r.data_uri_b64) {
+				html += `
+					<article class="result-block">
+						<h4>Base64 Data URI
+							<button class="copy-btn" data-copy="${encodeURIComponent(r.data_uri_b64)}">Copy</button>
+						</h4>
+						<pre><code>${r.data_uri_b64}</code></pre>
+					</article>
+				`;
+			}
+
+			outputSection.innerHTML = html;
+		} catch (err) {
+			outputSection.classList.add('has-error');
+			outputSection.innerHTML = `
+				<div class="error-state" role="alert">
+					<span class="error-icon" aria-hidden="true"></span>
+					<h3>Something went wrong</h3>
+					<p>Network error. Please try again.</p>
+				</div>
+			`;
+		}
+	});
+}
