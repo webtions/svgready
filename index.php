@@ -34,18 +34,6 @@ $mask_snippet = $results['mask_snippet'] ?? '';
 <meta charset="utf-8">
     <title>SVG Ready – Convert SVG to CSS Data URI | Webtions</title>
 
-    <!-- Content Security Policy for XSS protection -->
-<meta http-equiv="Content-Security-Policy"
-    content="
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://standalone.kokoanalytics.com;
-        connect-src 'self' https://www.google-analytics.com https://standalone.kokoanalytics.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data:;
-        object-src 'none';
-        base-uri 'self';
-    ">
     <meta name="description" content="Convert SVG to CSS Data URI instantly. Optimize SVG markup into percent-encoded or base64 Data URIs for cleaner, faster CSS. Free SVG converter tool.">
     <meta name="keywords" content="SVG converter, CSS Data URI, SVG to base64, SVG optimization, SVG to CSS, Data URI generator">
     <meta property="og:title" content="SVG Ready - Convert SVG to CSS Data URI">
