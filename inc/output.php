@@ -5,7 +5,7 @@
         <article class="result-block">
             <h4>SVG Preview</h4>
             <div class="preview-container" role="img" aria-label="SVG Preview">
-                <?php echo sanitize_svg($input_svg); ?>
+                <?php echo sanitize_svg($normalized); ?>
             </div>
         </article>
 
