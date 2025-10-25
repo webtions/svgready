@@ -131,6 +131,79 @@ function svg_to_base64(string $svg): string
 }
 
 /**
+ * Sanitizes SVG markup to remove JavaScript and dangerous attributes
+ *
+ * Removes all JavaScript event handlers, script tags, and dangerous attributes
+ * while preserving safe SVG elements and their legitimate attributes.
+ *
+ * @param string $svg Raw SVG markup to sanitize
+ *
+ * @return string Sanitized SVG markup safe for display
+ */
+function sanitize_svg(string $svg): string
+{
+    // Remove <script> blocks
+    $svg = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $svg);
+
+    // Remove any on*="..." attributes
+    $svg = preg_replace('/\son\w+\s*=\s*(["\']).*?\1/i', '', $svg);
+
+    // Remove other potentially dangerous attributes
+    $svg = preg_replace('/\s(xlink:href|href|style)\s*=\s*(["\']).*?\2/i', '', $svg);
+
+    // Allow only safe SVG elements
+    $allowed_tags = '<svg><g><path><rect><circle><polygon><line><polyline><ellipse><defs><use><text><image><clipPath><mask><pattern><linearGradient><radialGradient><stop><title><desc>';
+    return strip_tags($svg, $allowed_tags);
+}
+
+/**
+ * Sanitizes content for JavaScript data attributes
+ *
+ * Properly escapes content to prevent XSS when used in JavaScript context
+ * like data-copy attributes or JSON output.
+ *
+ * @param string $content Content to sanitize for JavaScript
+ *
+ * @return string JavaScript-safe content
+ */
+function sanitize_for_js(string $content): string
+{
+    // Escape for JavaScript context using JSON encoding
+    $content = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    return substr($content, 1, -1); // Remove outer quotes
+}
+
+/**
+ * Validates SVG input for security and structure
+ *
+ * Checks if input is actually SVG and doesn't contain dangerous patterns
+ * before processing to prevent security issues.
+ *
+ * @param string $svg SVG markup to validate
+ *
+ * @return bool True if SVG is safe to process
+ */
+function validate_svg(string $svg): bool
+{
+    // Check if it's actually SVG
+    if (!preg_match('/<svg\b/i', $svg)) {
+        return false;
+    }
+
+    // Check for dangerous patterns
+    if (preg_match('/<script\b|on\w+\s*=/i', $svg)) {
+        return false;
+    }
+
+    // Check for suspicious content
+    if (preg_match('/javascript:|data:text\/html|vbscript:/i', $svg)) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * Escapes HTML special characters for safe output
  *
  * Converts special characters to HTML entities to prevent XSS attacks

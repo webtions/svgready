@@ -11,6 +11,11 @@ if ($input_svg !== '' && strlen($input_svg) > 250000) { // 250 KB limit
     die('SVG too large (250 KB limit).');
 }
 
+// Security: Validate SVG input for security
+if ($input_svg !== '' && !validate_svg($input_svg)) {
+    die('Invalid or potentially dangerous SVG content detected.');
+}
+
 $normalized = $data_uri_css = $data_uri_b64 = $bg_snippet = $mask_snippet = '';
 
 if ($input_svg !== '') {
@@ -18,7 +23,7 @@ if ($input_svg !== '') {
     $data_uri_css = svg_to_data_uri($normalized);
     $bg_snippet   = 'background-image: url("' . $data_uri_css . '");';
     $mask_snippet = 'mask-image: url("' . $data_uri_css . '");' . "\n" .
-                    '-webkit-mask-image: url("' . $data_uri_css . '");';
+        '-webkit-mask-image: url("' . $data_uri_css . '");';
     if ($show_base64) {
         $data_uri_b64 = svg_to_base64($normalized);
     }
@@ -27,13 +32,16 @@ if ($input_svg !== '') {
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+<meta charset="utf-8">
     <title>SVG Ready – Convert SVG to CSS Data URI | Webtions</title>
+
+    <!-- Content Security Policy for XSS protection -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://standalone.kokoanalytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self';">
     <meta name="description" content="Convert SVG to CSS Data URI instantly. Optimize SVG markup into percent-encoded or base64 Data URIs for cleaner, faster CSS. Free SVG converter tool.">
     <meta name="keywords" content="SVG converter, CSS Data URI, SVG to base64, SVG optimization, SVG to CSS, Data URI generator">
     <meta property="og:title" content="SVG Ready - Convert SVG to CSS Data URI">
     <meta property="og:description" content="Instantly convert SVG markup into percent-encoded or base64 Data URIs for cleaner, faster CSS.">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Google tag(gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-MTZ6348352"></script>
@@ -57,8 +65,8 @@ if ($input_svg !== '') {
         "name": "SVG Ready",
         "description": "Convert SVG to CSS Data URI instantly",
         "applicationCategory": "DeveloperApplication"
-    }
-    </script>
+}
+</script>
 </head>
 
 <body>
@@ -124,5 +132,19 @@ if ($input_svg !== '') {
     </footer>
 
     <script src="assets/scripts.js" defer></script>
+
+    <!-- Analytics -->
+    <script>
+    (function(o, c) {
+      window[o] = c;
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = [c.url, '/', o, '.js'].join('');
+      document.body.appendChild(s);
+    })('ka', {
+      url: 'https://standalone.kokoanalytics.com',
+      domain: 'svgready.com'
+    })
+    </script>
 </body>
 </html>
