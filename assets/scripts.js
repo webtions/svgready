@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
 						<h4>Normalized SVG
 							<button class="copy-btn" data-copy="${encodeURIComponent(r.normalized)}">Copy</button>
 						</h4>
-						<pre><code>${r.normalized}</code></pre>
+						<pre><code>${r.normalized.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
 					</article>
 					<article class="result-block">
 						<h4>Percent-encoded Data URI
