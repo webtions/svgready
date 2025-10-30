@@ -1,4 +1,17 @@
 <?php
+// Serve 404.html only for fake paths (not real file requests)
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$path = __DIR__ . $uri;
+
+if ($uri !== '/'
+    && ! file_exists($path)
+    && ! is_dir(__DIR__ . explode('/', trim($uri, '/'))[0])
+) {
+    http_response_code(404);
+    include __DIR__ . '/404.html';
+    exit;
+}
+
 require_once __DIR__ . '/inc/functions.php';
 require_once __DIR__ . '/inc/SvgConverter.php';
 
@@ -138,6 +151,63 @@ $mask_snippet = $results['mask_snippet'] ?? '';
     url: 'https://standalone.kokoanalytics.com',
     domain: 'svgready.com'
 });
+</script>
+<script>
+(function () {
+    function getDeviceType()
+    {
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('mobile') || window.innerWidth < 768) {
+            return 'mobile';
+        }
+        return 'desktop';
+    }
+
+    function postEvent(event, extra = {})
+    {
+        const payload = {
+        event,
+        screen: screen.width + 'x' + screen.height,
+        lang: navigator.language,
+        ua: navigator.userAgent,
+        referrer: document.referrer,
+        device: getDeviceType(),
+        url: extra.url || null,
+        ts: new Date().toISOString()
+        };
+
+        fetch(
+            'analytics/track.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+            }
+        );
+    }
+
+    // Pageview
+    postEvent('pageview');
+
+    // Convert button
+    const convertBtn = document.querySelector('form button[type="submit"]');
+    if (convertBtn) {
+        convertBtn.addEventListener(
+            'click', () => {
+            postEvent('convert_click');
+            }
+        );
+    }
+
+    // Outbound links
+    document.addEventListener(
+        'click', (e) => {
+        const link = e.target.closest('a[href^="http"]');
+        if (link && !link.href.includes(location.hostname)) {
+            postEvent('outbound_click', { url: link.href });
+        }
+        }
+    );
+})();
 </script>
 </body>
 </html>
