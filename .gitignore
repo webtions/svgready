@@ -93,3 +93,6 @@ development/
 # SVG test files (if they're large or numerous)
 test-svgs/
 sample-svgs/
+
+# SVG sanitizer library
+svg-sanitizer-master/
