@@ -38,9 +38,9 @@ class View
 		if (! file_exists($templatePath)) {
 			// Log the template error.
 			Logger::error('Template not found', [
-				'template'     => $template,
-				'template_path' => $templatePath,
-			]);
+                                                 'template'      => $template,
+                                                 'template_path' => $templatePath,
+                                                ]);
 
 			http_response_code(500);
 			echo '<p>Template not found: ' . htmlspecialchars($template, ENT_QUOTES, 'UTF-8') . '</p>';

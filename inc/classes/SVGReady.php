@@ -71,22 +71,22 @@ class Core
 			function (int $errno, string $errstr, string $errfile, int $errline): bool {
 				// Map error numbers to error types.
 				$errorTypes = [
-					E_ERROR             => 'ERROR',
-					E_WARNING           => 'WARNING',
-					E_PARSE             => 'PARSE',
-					E_NOTICE            => 'NOTICE',
-					E_CORE_ERROR        => 'CORE_ERROR',
-					E_CORE_WARNING      => 'CORE_WARNING',
-					E_COMPILE_ERROR     => 'COMPILE_ERROR',
-					E_COMPILE_WARNING   => 'COMPILE_WARNING',
-					E_USER_ERROR        => 'USER_ERROR',
-					E_USER_WARNING      => 'USER_WARNING',
-					E_USER_NOTICE       => 'USER_NOTICE',
-					E_STRICT            => 'STRICT',
-					E_RECOVERABLE_ERROR => 'RECOVERABLE_ERROR',
-					E_DEPRECATED        => 'DEPRECATED',
-					E_USER_DEPRECATED   => 'USER_DEPRECATED',
-				];
+                               E_ERROR             => 'ERROR',
+                               E_WARNING           => 'WARNING',
+                               E_PARSE             => 'PARSE',
+                               E_NOTICE            => 'NOTICE',
+                               E_CORE_ERROR        => 'CORE_ERROR',
+                               E_CORE_WARNING      => 'CORE_WARNING',
+                               E_COMPILE_ERROR     => 'COMPILE_ERROR',
+                               E_COMPILE_WARNING   => 'COMPILE_WARNING',
+                               E_USER_ERROR        => 'USER_ERROR',
+                               E_USER_WARNING      => 'USER_WARNING',
+                               E_USER_NOTICE       => 'USER_NOTICE',
+                               E_STRICT            => 'STRICT',
+                               E_RECOVERABLE_ERROR => 'RECOVERABLE_ERROR',
+                               E_DEPRECATED        => 'DEPRECATED',
+                               E_USER_DEPRECATED   => 'USER_DEPRECATED',
+                              ];
 
 				$errorType = $errorTypes[$errno] ?? 'UNKNOWN';
 
@@ -104,9 +104,7 @@ class Core
 		// Set up exception handler for uncaught exceptions.
 		set_exception_handler(
 			function (\Throwable $exception): void {
-				Logger::exception($exception, [
-					'uncaught' => true,
-				]);
+				Logger::exception($exception, ['uncaught' => true]);
 			}
 		);
 	}
@@ -190,9 +188,9 @@ class Core
 			} catch (\Throwable $e) {
 				// Log the exception to debug.log.
 				Logger::exception($e, [
-					'input_svg_length' => strlen($inputSvg),
-					'request_method'    => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-				]);
+                                       'input_svg_length' => strlen($inputSvg),
+                                       'request_method'   => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+                                      ]);
 
 				$errorTitle   = $errors['server_error']['title'] ?? '';
 				$errorMessage = $errors['server_error']['text'] ?? '';
