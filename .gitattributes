@@ -4,6 +4,17 @@ README.md export-ignore
 _docs/ export-ignore
 analytics/ export-ignore
 
+# Development and build files
+composer.json export-ignore
+composer.lock export-ignore
+.phpcs.xml export-ignore
+phpstan.neon export-ignore
+.editorconfig export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+.gitmodules export-ignore
+vendor/ export-ignore
+
 # Line endings
 * text=auto
 *.php text eol=lf
