@@ -1,0 +1,112 @@
+# SVG Ready
+
+**SVG Ready** is a web-based tool that converts raw SVG markup into CSS-ready Data URIs. It provides a simple interface where users can paste SVG code and instantly get optimized, sanitized outputs ready for use in CSS.
+
+## Quick Start
+
+1. Paste your SVG markup into the form
+
+2. Choose options (strip width/height, strip class, show base64)
+
+3. Click **Convert** or press **Cmd + Enter** / **Ctrl + Enter**
+
+4. Copy the generated output formats
+
+## Interface Overview
+
+- **Input**: Raw SVG in a textarea
+
+- **Options**:
+
+  - Strip `width` / `height`
+
+  - Remove `class`
+
+  - Show base64
+
+- **Output**:
+
+  - SVG preview
+
+  - Cleaned markup
+
+  - Percent-encoded Data URI
+
+  - CSS `background-image` snippet
+
+  - CSS `mask-image` snippet
+
+  - Base64 URI (if selected)
+
+- **Copy buttons** for each output
+
+## Conversion Options
+
+- **Strip Width/Height**: Makes SVG scalable
+
+- **Strip Class**: Avoids conflicts when used in CSS
+
+- **Show Base64**: Includes base64 format in addition to percent-encoded
+
+## Limitations
+
+- Max input size: 250 KB
+
+- Disallowed content:
+
+  - `<script>`, `<foreignObject>`, `onload`, `onclick`, etc.
+
+  - External images, JS/data URLs
+
+  - XML entities and DOCTYPE
+
+## Example
+
+**Input:**
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="10" fill="blue"/>
+</svg>
+```
+
+**Output (CSS):**
+
+```css
+background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='blue'/></svg>");
+
+mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='blue'/></svg>");
+
+-webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='blue'/></svg>");
+```
+
+## Core Features
+
+- **Normalization**: Removes XML declarations, comments, extra whitespace
+
+- **Sanitization**: Strips unsafe elements/attributes
+
+- **Clipboard Support**: One-click copy with fallback
+
+## Compatibility
+
+Works in modern browsers that support:
+
+- SVG rendering
+
+- CSS Data URIs
+
+- Clipboard API or fallback
+
+- FormData and Fetch API
+
+## Privacy
+
+- No tracking
+
+- No external API calls
+
+- Theme preference saved in local storage only
+
+Built by [Webtions](https://webtions.com)
+
