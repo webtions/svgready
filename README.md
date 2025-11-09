@@ -57,6 +57,16 @@ SVG input is sanitized and validated using a multi-layer security approach:
 
 ---
 
+## Logging
+
+The application includes a built-in logging system:
+
+- **Log File**: `debug.log` in the project root
+- **Automatic Rotation**: Logs rotate when file exceeds 5MB
+- **Backup Management**: Keeps 10 most recent backup files
+- **Security**: Log files protected from web access, restrictive permissions
+- **Error Tracking**: All errors, exceptions, and warnings are logged
+
 ## Tech Stack
 
 - PHP 8+ (strict types)
@@ -75,7 +85,8 @@ SVG input is sanitized and validated using a multi-layer security approach:
 │   ├── classes/          # Core classes
 │   │   ├── SVGReady.php  # Bootstrap & request handling
 │   │   ├── SVGConverter.php  # SVG processing
-│   │   └── View.php      # Template renderer
+│   │   ├── View.php      # Template renderer
+│   │   └── Logger.php    # Error logging system
 │   ├── functions/        # Helper functions
 │   │   ├── functions.php # Escaping utilities
 │   │   └── errors.php    # Error message definitions

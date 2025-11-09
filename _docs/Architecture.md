@@ -29,6 +29,15 @@ SVG Ready is a PHP-based web application that converts SVG markup to CSS Data UR
 - Default variable guarantees
 - Safe variable extraction
 
+### Logger (`inc/classes/Logger.php`)
+- Error and debug logging to `debug.log` file
+- Automatic log rotation when file exceeds 5MB
+- Backup file cleanup (keeps 10 most recent backups)
+- Log injection prevention (sanitizes messages)
+- Secure file permissions (0600 for log file, 0700 for directory)
+- Path traversal protection
+- Fallback to PHP error log if file writing fails
+
 ## Directory Structure
 
 ```
@@ -39,7 +48,8 @@ SVG Ready is a PHP-based web application that converts SVG markup to CSS Data UR
 │   ├── classes/          # Core classes
 │   │   ├── SVGReady.php  # Bootstrap & request handling
 │   │   ├── SVGConverter.php  # SVG processing
-│   │   └── View.php      # Template renderer
+│   │   ├── View.php      # Template renderer
+│   │   └── Logger.php    # Error logging system
 │   ├── functions/        # Helper functions
 │   │   ├── functions.php # Escaping utilities
 │   │   └── errors.php    # Error message definitions
@@ -87,6 +97,18 @@ SVG Ready is a PHP-based web application that converts SVG markup to CSS Data UR
 6. **Href Validation**: Safe URL checking for links
 7. **Nesting Limits**: Prevents excessive `<use>` element nesting
 8. **Output Escaping**: All user content escaped before display
+9. **Log File Protection**: `.htaccess` blocks web access to log files, restrictive file permissions (0600)
+
+## Logging System
+
+The application includes a comprehensive logging system for debugging and error tracking:
+
+- **Log File**: `debug.log` in the project root
+- **Automatic Rotation**: Logs are rotated when file exceeds 5MB
+- **Backup Management**: Keeps 10 most recent backup files (`.bak` extension)
+- **Error Logging**: All errors, exceptions, and warnings are logged
+- **Security**: Log files protected from web access via `.htaccess`, restrictive file permissions
+- **Log Injection Prevention**: All log messages are sanitized to prevent injection attacks
 
 ## Dependencies
 
