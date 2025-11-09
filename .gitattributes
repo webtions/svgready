@@ -2,6 +2,7 @@
 config.php export-ignore
 README.md export-ignore
 _docs/ export-ignore
+analytics/ export-ignore
 
 # Line endings
 * text=auto
