@@ -20,6 +20,20 @@ namespace SVGReady;
 class Logger
 {
 	/**
+	 * Maximum log file size before rotation (5MB).
+	 *
+	 * @var int
+	 */
+	private const MAX_LOG_SIZE = 5_000_000;
+
+	/**
+	 * Maximum number of backup files to keep.
+	 *
+	 * @var int
+	 */
+	private const MAX_BACKUP_FILES = 10;
+
+	/**
 	 * Path to the debug log file.
 	 *
 	 * @var string
@@ -92,6 +106,9 @@ class Logger
 		if (! is_dir($logDir)) {
 			@mkdir($logDir, 0700, true);
 		}
+
+		// Rotate log file if it exceeds maximum size.
+		self::rotateLogIfNeeded();
 
 		// Write to log file (append mode) with restricted permissions.
 		$result = @file_put_contents(self::$logFile, $logEntry, FILE_APPEND | LOCK_EX);
@@ -214,6 +231,9 @@ class Logger
 			@mkdir($logDir, 0700, true);
 		}
 
+		// Rotate log file if it exceeds maximum size.
+		self::rotateLogIfNeeded();
+
 		// Write to log file (append mode) with restricted permissions.
 		$result = @file_put_contents(self::$logFile, $logEntry, FILE_APPEND | LOCK_EX);
 
@@ -233,6 +253,69 @@ class Logger
 					$exception->getMessage()
 				)
 			);
+		}
+	}
+
+	/**
+	 * Rotate log file if it exceeds maximum size.
+	 *
+	 * @since  1.0.0
+	 * @return void
+	 */
+	private static function rotateLogIfNeeded(): void
+	{
+		if (! file_exists(self::$logFile)) {
+			return;
+		}
+
+		$fileSize = @filesize(self::$logFile);
+		if ($fileSize === false || $fileSize < self::MAX_LOG_SIZE) {
+			return;
+		}
+
+		// Create backup filename with timestamp.
+		$backupFile = self::$logFile . '.' . date('Ymd_His') . '.bak';
+
+		// Rename current log file to backup.
+		if (@rename(self::$logFile, $backupFile)) {
+			// Clean up old backup files (keep only the most recent ones).
+			self::cleanupOldBackups();
+		}
+	}
+
+	/**
+	 * Clean up old backup log files, keeping only the most recent ones.
+	 *
+	 * @since  1.0.0
+	 * @return void
+	 */
+	private static function cleanupOldBackups(): void
+	{
+		$logDir      = dirname(self::$logFile);
+		$logBaseName = basename(self::$logFile);
+		$pattern     = $logDir . '/' . $logBaseName . '.*.bak';
+
+		$backupFiles = glob($pattern);
+		if ($backupFiles === false || count($backupFiles) <= self::MAX_BACKUP_FILES) {
+			return;
+		}
+
+		// Sort by modification time (newest first).
+		usort($backupFiles, function ($a, $b) {
+			$timeA = @filemtime($a);
+			$timeB = @filemtime($b);
+
+			if ($timeA === false || $timeB === false) {
+				return 0;
+			}
+
+			return $timeB - $timeA;
+		});
+
+		// Remove oldest backup files beyond the limit.
+		$filesToRemove = array_slice($backupFiles, self::MAX_BACKUP_FILES);
+		foreach ($filesToRemove as $file) {
+			@unlink($file);
 		}
 	}
 
