@@ -1,5 +1,6 @@
 # Backup files
 *.bak
+!.maintenance.bak
 *.backup
 *.old
 *.orig
@@ -25,14 +26,14 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# PHP specific
+# PHP / Composer
 composer.phar
 vendor/
-composer.lock
 .phpunit.result.cache
 
 # Logs
 *.log
+debug.log
 logs/
 error_log
 access_log
@@ -49,47 +50,13 @@ temp/
 .env.production
 .env.staging
 
-# Node.js (if using any build tools)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build artifacts
-dist/
-build/
-*.min.js
-*.min.css
-
-# Database files
-*.sqlite
-*.db
+# Maintenance mode
+.maintenance
 
 # Security sensitive files
 config.php
-wp-config.php
-.htaccess
 
 # Test files
 tests/
 test/
 phpunit.xml
-.phpunit.result.cache
-
-# Documentation build
-docs/_build/
-
-# Local development
-local/
-dev/
-development/
-
-# Large files that shouldn't be in version control
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# SVG test files (if they're large or numerous)
-test-svgs/
-sample-svgs/

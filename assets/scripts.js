@@ -4,6 +4,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+
 	/* ==========================
 	   THEME TOGGLE
 	   ========================== */
@@ -72,8 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('click', (e) => {
 		const button = e.target.closest('.copy-btn');
 		if (!button) return;
-		const text = button.dataset.copy || button.closest('article')?.querySelector('code')?.textContent;
-		if (text) copyToClipboard(text.trim(), button);
+
+		const codeEl = button.closest('article')?.querySelector('code');
+		if (!codeEl) return;
+
+		const text = codeEl.innerText.trim();
+		copyToClipboard(text, button);
 	});
 
 	/* ==========================
@@ -84,11 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	const svgInput = form ? form.querySelector('#svg') : null;
 
 	if (form && outputSection && svgInput) {
-		// Submit handler
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
 
-			// Stop if no SVG content
+			// Empty input error
 			if (!svgInput.value.trim()) {
 				outputSection.classList.add('has-error');
 				outputSection.innerHTML = `
@@ -101,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				return;
 			}
 
+			// Processing state
 			const formData = new FormData(form);
 			outputSection.classList.remove('has-error');
 			outputSection.innerHTML = '<div class="empty-state"><p>Processing...</p></div>';
@@ -108,70 +113,19 @@ document.addEventListener('DOMContentLoaded', () => {
 			try {
 				const res = await fetch('ajax.php', {
 					method: 'POST',
-					body: formData,
+					body: formData
 				});
+				const html = await res.text();
 
-				const data = await res.json();
-
-				if (data.error) {
+				// Ensure consistent error styling
+				if (html.includes('error-state')) {
 					outputSection.classList.add('has-error');
-					outputSection.innerHTML = `
-						<div class="error-state" role="alert">
-							<span class="error-icon" aria-hidden="true"></span>
-							<h3>Something went wrong</h3>
-							<p>${data.error}</p>
-						</div>
-					`;
-					return;
-				}
-
-				const r = data.results;
-				outputSection.classList.remove('has-error');
-
-				let html = `
-					<article class="result-block">
-						<h4>SVG Preview</h4>
-						<div class="preview-container" role="img">${r.preview}</div>
-					</article>
-					<article class="result-block">
-						<h4>Normalized SVG
-							<button class="copy-btn" data-copy="${encodeURIComponent(r.normalized)}">Copy</button>
-						</h4>
-						<pre><code>${r.normalized.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-					</article>
-					<article class="result-block">
-						<h4>Percent-encoded Data URI
-							<button class="copy-btn" data-copy="${encodeURIComponent(r.data_uri_css)}">Copy</button>
-						</h4>
-						<pre><code>${r.data_uri_css}</code></pre>
-					</article>
-					<article class="result-block">
-						<h4>Background Image CSS
-							<button class="copy-btn" data-copy="${encodeURIComponent(r.bg_snippet)}">Copy</button>
-						</h4>
-						<pre><code>${r.bg_snippet}</code></pre>
-					</article>
-					<article class="result-block">
-						<h4>Mask Image CSS
-							<button class="copy-btn" data-copy="${encodeURIComponent(r.mask_snippet)}">Copy</button>
-						</h4>
-						<pre><code>${r.mask_snippet}</code></pre>
-					</article>
-				`;
-
-				if (r.show_base64 && r.data_uri_b64) {
-					html += `
-						<article class="result-block">
-							<h4>Base64 Data URI
-								<button class="copy-btn" data-copy="${encodeURIComponent(r.data_uri_b64)}">Copy</button>
-							</h4>
-							<pre><code>${r.data_uri_b64}</code></pre>
-						</article>
-					`;
+				} else {
+					outputSection.classList.remove('has-error');
 				}
 
 				outputSection.innerHTML = html;
-			} catch (err) {
+			} catch {
 				outputSection.classList.add('has-error');
 				outputSection.innerHTML = `
 					<div class="error-state" role="alert">

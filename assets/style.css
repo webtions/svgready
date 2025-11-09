@@ -104,9 +104,9 @@ em {
 /* ===============================
    3. Icon Toggle Visibility
    =============================== */
-.icon-moon { display: none; }
-body.dark .icon-sun { display: none; }
-body.dark .icon-moon { display: inline; }
+.icon-sun { display: none; }
+body.dark .icon-moon { display: none; }
+body.dark .icon-sun { display: inline; }
 
 /* ===============================
    4. Layout
@@ -514,4 +514,34 @@ body.dark .site-footer {
 	line-height: 1.5;
 	margin: 0;
 	font-size: var(--font-size-base);
+}
+
+/* ===============================
+   16. Benchmark Results
+   =============================== */
+.benchmark {
+	margin-top: var(--spacing-lg);
+	text-align: center;
+	font-size: 13px;
+	color: var(--muted);
+	padding-top: var(--spacing-lg);
+	line-height: 1.6;
+}
+
+.benchmark p {
+	margin: 0;
+}
+
+.benchmark strong {
+	color: var(--accent);
+	font-weight: 600;
+}
+
+body.dark .benchmark {
+	border-top-color: var(--border);
+	color: var(--muted);
+}
+
+body.dark .benchmark strong {
+	color: var(--secondary);
 }

@@ -1,0 +1,40 @@
+# EditorConfig for SVG Ready
+# Enforces consistent indentation, line endings, and whitespace
+# Works in Sublime Text, VS Code, PHPStorm, etc.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Use tabs for all indentation
+indent_style = tab
+tab_width = 4
+
+# Markdown allows trailing whitespace for line breaks
+[*.md]
+trim_trailing_whitespace = false
+
+# JSON, YAML, and config files typically use spaces
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# CSS, JS, and HTML keep tabs for consistency
+[*.{css,js,html}]
+indent_style = tab
+indent_size = 4
+
+# PHP files follow your WP coding style (tabs)
+[*.php]
+indent_style = tab
+tab_width = 4
+insert_final_newline = true
+
+# Git and config files
+[*.{gitignore,editorconfig}]
+indent_style = space
+indent_size = 2

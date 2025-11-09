@@ -1,0 +1,9 @@
+# Protect log files from web access
+<FilesMatch "\.(log|txt)$">
+	Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
