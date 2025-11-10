@@ -50,6 +50,12 @@ temp/
 .env.production
 .env.staging
 
+# Prevent accidental commits of private keys or tokens
+*.key
+*.pem
+*.crt
+*.token
+
 # Maintenance mode
 .maintenance
 

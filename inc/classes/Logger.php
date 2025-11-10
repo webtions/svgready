@@ -341,19 +341,41 @@ class Logger
 		return self::$logFile;
 	}
 
-/**
- * Send an event to LogSnag.
- *
- * @param string $title   Event title or message.
- * @param string $level   Severity level.
- * @param array  $context Extra context data.
- *
- * @since  1.0.0
- * @return void
- */
+	/**
+	 * Send an event to LogSnag.
+	 *
+	 * @param string $title   Event title or message.
+	 * @param string $level   Severity level.
+	 * @param array  $context Extra context data.
+	 *
+	 * @since  1.0.0
+	 * @return void
+	 */
 	private static function sendToLogSnag(string $title, string $level = 'INFO', array $context = []): void
 	{
 		try {
+			// Load .env if not already loaded
+			$envPath = dirname(__DIR__, 2) . '/.env';
+			if (file_exists($envPath)) {
+				foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+					if (str_starts_with(trim($line), '#') || ! str_contains($line, '=')) {
+						continue;
+					}
+					[
+					 $name,
+					 $value,
+					] = array_map('trim', explode('=', $line, 2));
+					if ($name !== '' && ! getenv($name)) {
+						putenv(sprintf('%s=%s', $name, $value));
+					}
+				}
+			}
+
+			$token = getenv('LOGSNAG_TOKEN');
+			if (empty($token)) {
+				return; // Skip silently if no token defined
+			}
+
 			$server = $_SERVER['SERVER_NAME'] ?? '';
 			if ($server === '') {
 				// Likely CLI/cron; skip silently.
@@ -379,7 +401,7 @@ class Logger
                                     CURLOPT_POST           => true,
                                     CURLOPT_HTTPHEADER     => [
                                                                'Content-Type: application/json',
-                                                               'Authorization: Bearer 2111fa04557124746d2eb588a6fd4e72',
+                                                               'Authorization: Bearer ' . $token,
                                                               ],
                                     CURLOPT_POSTFIELDS     => json_encode($payload),
                                     CURLOPT_RETURNTRANSFER => true,
@@ -395,14 +417,13 @@ class Logger
 
 			// Success codes: 2xx
 			if ($errno || $status < 200 || $status >= 300) {
-				// Log locally so we can see what went wrong.
 				Logger::warning('LogSnag post failed', [
                                                         'httpStatus' => $status,
                                                         'curlErrno'  => $errno,
                                                         'curlError'  => $error,
                                                         'response'   => is_string($response) ? trim($response) : null,
                                                        ]);
-				// Also fall back to PHP error log (silent in UI).
+
 				error_log(sprintf(
 					'[LogSnag] Failed (HTTP %d, errno %d): %s | resp=%s',
 					$status,
@@ -412,7 +433,6 @@ class Logger
 				));
 			}
 		} catch (\Throwable $e) {
-			// Never break the app; record locally.
 			Logger::exception($e, ['where' => 'sendToLogSnag']);
 		}
 	}
