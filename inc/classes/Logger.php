@@ -145,6 +145,7 @@ class Logger
 	public static function error(string $message, array $context = []): void
 	{
 		self::log($message, 'ERROR', $context);
+		self::sendToLogSnag($message, 'ERROR', $context);
 	}
 
 	/**
@@ -201,6 +202,12 @@ class Logger
 	public static function exception(\Throwable $exception, array $context = []): void
 	{
 		self::init();
+	// existing exception logging logic (unchanged) …
+		self::sendToLogSnag($exception->getMessage(), 'EXCEPTION', [
+                                                                    'file' => $exception->getFile(),
+                                                                    'line' => $exception->getLine(),
+                                                                   ]);
+
 
 		$timestamp  = date('Y-m-d H:i:s');
 		$contextStr = '';
@@ -332,5 +339,81 @@ class Logger
 	{
 		self::init();
 		return self::$logFile;
+	}
+
+/**
+ * Send an event to LogSnag.
+ *
+ * @param string $title   Event title or message.
+ * @param string $level   Severity level.
+ * @param array  $context Extra context data.
+ *
+ * @since  1.0.0
+ * @return void
+ */
+	private static function sendToLogSnag(string $title, string $level = 'INFO', array $context = []): void
+	{
+		try {
+			$server = $_SERVER['SERVER_NAME'] ?? '';
+			if ($server === '') {
+				// Likely CLI/cron; skip silently.
+				return;
+			}
+
+			$payload = [
+                        'project' => 'svgready',
+                        'channel' => 'error',
+                        'event'   => $title,
+                        'notify'  => in_array($level, ['ERROR', 'EXCEPTION'], true),
+                       ];
+
+			if (! empty($context)) {
+				$payload['description'] = json_encode(
+                    $context,
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+				);
+			}
+
+			$ch = curl_init('https://api.logsnag.com/v1/log');
+			curl_setopt_array($ch, [
+                                    CURLOPT_POST           => true,
+                                    CURLOPT_HTTPHEADER     => [
+                                                               'Content-Type: application/json',
+                                                               'Authorization: Bearer 2111fa04557124746d2eb588a6fd4e72',
+                                                              ],
+                                    CURLOPT_POSTFIELDS     => json_encode($payload),
+                                    CURLOPT_RETURNTRANSFER => true,
+                                    CURLOPT_FOLLOWLOCATION => true,
+                                    CURLOPT_TIMEOUT        => 5,
+                                   ]);
+
+			$response = curl_exec($ch);
+			$errno    = curl_errno($ch);
+			$error    = $errno ? curl_error($ch) : null;
+			$status   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			// Success codes: 2xx
+			if ($errno || $status < 200 || $status >= 300) {
+				// Log locally so we can see what went wrong.
+				Logger::warning('LogSnag post failed', [
+                                                        'httpStatus' => $status,
+                                                        'curlErrno'  => $errno,
+                                                        'curlError'  => $error,
+                                                        'response'   => is_string($response) ? trim($response) : null,
+                                                       ]);
+				// Also fall back to PHP error log (silent in UI).
+				error_log(sprintf(
+					'[LogSnag] Failed (HTTP %d, errno %d): %s | resp=%s',
+					$status,
+					$errno,
+					$error ?? 'n/a',
+					is_string($response) ? substr($response, 0, 500) : 'n/a'
+				));
+			}
+		} catch (\Throwable $e) {
+			// Never break the app; record locally.
+			Logger::exception($e, ['where' => 'sendToLogSnag']);
+		}
 	}
 }

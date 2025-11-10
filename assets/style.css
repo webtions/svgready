@@ -3,12 +3,25 @@
    ========================================= */
 
 /* ===============================
+   0. Font Face Declarations
+   =============================== */
+
+@font-face {
+	font-family: 'Recursive';
+	src: url('/assets/fonts/Recursive-Basic.woff2') format('woff2');
+	font-weight: 100 900;
+	font-style: normal, oblique 0deg 15deg;
+	font-display: swap;
+}
+
+/* ===============================
    1. Root Variables
    =============================== */
 :root {
 	--bg: #ffffff;
 	--fg: #111827;
 	--muted: #6b7280;
+	--light: #dddddd;
 	--card: #ffffff;
 	--accent: #0000ee;
 	--secondary: #f92e85;
@@ -26,15 +39,15 @@
 	--shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 	--black: #000000;
 
-	--font-sans: 'Inter', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	--font-serif: Times, 'Times New Roman', serif;
+	--font-sans: 'Recursive', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--font-mono: 'Recursive', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
 	/* Responsive Typography */
-	--font-size-sm: 0.875rem;
-	--font-size-base: 1rem;
-	--font-size-lg: 1.125rem;
-	--font-size-xl: clamp(1.25rem, 1.25rem + ((1vw - 0.2rem) * 1.5), 2rem);
-	--font-size-2xl: clamp(1.5rem, 1.5rem + ((1vw - 0.2rem) * 2.128), 2.75rem);
+	--font-size-sm: 0.875rem; /* ~14px */
+	--font-size-base: 1rem;   /* 16px */
+	--font-size-lg: clamp(1rem, 0.9rem + 0.6vw, 1.25rem);   /* ~16–24px */
+	--font-size-xl: clamp(1.25rem, 1.1rem + 1vw, 2.5rem);  /* ~20–40px */
+	--font-size-2xl: clamp(1.75rem, 1.4rem + 2vw, 3.5rem); /* ~28–56px */
 
 	/* Responsive Spacing */
 	--spacing-xs: 0.25rem;
@@ -70,35 +83,48 @@ body.dark {
    =============================== */
 * { box-sizing: border-box; }
 
-html,
-body {
+html {
+	width: 100%;
 	max-width: 100%;
 	overflow-x: hidden;
-	padding: var(--spacing-sm);
+	position: relative;
 }
 
 body {
 	margin: 0;
-	font-family: 'Inter', -apple-system, system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	/* padding: var(--spacing-sm); */
+	font-family: var(--font-sans);
+	font-weight: 400;
+	font-style: normal;
+	/* font-variation-settings: 'MONO' 0.5, 'CASL' 0, 'CRSV' 0; */
 	background: var(--bg);
 	color: var(--fg);
-	overflow-x: hidden;
 	-webkit-font-smoothing: antialiased;
 	transition: background 0.25s, color 0.25s;
+	padding: var(--spacing-xl) var(--spacing-xl);
 }
 
 h1, h2, h3, h4, h5 {
 	margin: 0;
-	font-weight: 600;
+	font-weight: 800;
+	/* font-variation-settings: 'MONO' 0.5, 'CASL' 0.2, 'CRSV' 0; */
 }
 
 a {
 	color: var(--accent);
 	text-decoration: none;
+	font-variation-settings: 'MONO' 1;
+	font-weight: 500;
+	transition: font-weight 0.25s ease, color 0.25s ease;
+}
+
+a:hover {
+	font-weight: 700;
 }
 
 em {
-	font-family: var(--font-serif);
+	font-family: var(--font-mono);
+	font-style: oblique 10deg;
 }
 
 /* ===============================
@@ -112,13 +138,15 @@ body.dark .icon-sun { display: inline; }
    4. Layout
    =============================== */
 .wrap {
-	width: 100%;
+	/* width: 100%; */
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 0 var(--spacing-xl);
+	/* padding: 0 var(--spacing-xl); */
 	display: flex;
 	flex-direction: column;
 	gap: var(--spacing-xl);
+	min-width: 0;
+	box-sizing: border-box;
 }
 
 
@@ -127,36 +155,43 @@ body.dark .icon-sun { display: inline; }
    5. Header
    =============================== */
 .site-header {
-	padding: var(--spacing-sm) var(--spacing-xl);
+	/* padding: var(--spacing-sm) var(--spacing-xl); */
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	max-width: 1400px;
 	margin: 0 auto;
 	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 }
 
 .site-title {
 	font-size: var(--font-size-2xl);
-	font-weight: 700;
+	font-weight: 800;
 	color: var(--fg);
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-sm);
 	text-decoration: none;
+	word-spacing: -0.3em;
 }
 
 .site-title a {
 	color: var(--accent);
 	text-decoration: none;
-	font-family: var(--font-sans);
+	font-variation-settings: 'MONO' 0.5, 'CASL' 0.2, 'CRSV' 0;
+	border: none;
 }
 
 .site-title .word {
 	color: var(--black);
-	font-family: var(--font-serif);
-	font-size: 0.85em;
-	text-transform: lowercase;
+	font-variation-settings: 'MONO' 1, 'CASL' 0, 'CRSV' 0;
+	text-transform: uppercase;
+	font-size: 1rem;
+	font-style: normal;
+	font-weight: 500;
+	/* text-transform: lowercase; */
 }
 
 .site-nav ul {
@@ -198,19 +233,26 @@ body.dark .icon-sun { display: inline; }
    6. Intro
    =============================== */
 .intro {
+	padding: var(--spacing-2xl) 0;
 	text-align: center;
-	padding: 24px;
 	max-width: 720px;
 	margin: 0 auto;
+	text-wrap: pretty;
+	/* font-variation-settings: 'MONO' 1, 'CASL' 0, 'CRSV' 0; */
 
 }
 
 .intro h2 {
 	font-size: var(--font-size-xl);
+	background: linear-gradient(90deg, #ff0000, #0000ff);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	font-weight: 700;
 }
 
 .intro p {
-	line-height: 1.4;
+	font-variation-settings: 'MONO' 1, 'CASL' 0, 'CRSV' 0;
+	line-height: 1.5;
 	font-size: var(--font-size-lg);
 	color:var(--muted);
 }
@@ -223,6 +265,7 @@ body.dark .icon-sun { display: inline; }
 	grid-template-columns: 1fr 1fr;
 	gap: 24px;
 	width: 100%;
+	min-width: 0;
 }
 
 /* ===============================
@@ -236,6 +279,9 @@ body.dark .icon-sun { display: inline; }
 	padding: var(--spacing-xl);
 	box-shadow: var(--shadow);
 	transition: background 0.2s ease;
+	min-width: 0;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
 }
 
 
@@ -256,8 +302,8 @@ input[type='text'] {
 	border: var(--border-width) solid var(--border);
 	border-radius: var(--border-radius);
 	padding: var(--spacing-sm);
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-	font-size: 14px;
+	font-family: var(--font-mono);
+	font-size: 16px;
 	resize: vertical;
 	min-height: 180px;
 }
@@ -356,7 +402,11 @@ input[type='text']:focus {
 /* ===============================
    11. Outputs
    =============================== */
-.result-block { margin-bottom: 20px; }
+.result-block {
+	margin-bottom: 20px;
+	min-width: 0;
+	max-width: 100%;
+}
 
 pre {
 	background: var(--code-bg);
@@ -366,12 +416,17 @@ pre {
 	font-size: 13px;
 	line-height: 1.45;
 	white-space: pre-wrap;
-	word-break: break-all;
-	overflow-x: hidden;
+	word-break: break-word;
+	overflow-wrap: break-word;
+	overflow-x: auto;
+	max-width: 100%;
+	min-width: 0;
 }
 
 code {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+	font-family: var(--font-mono);
+	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 .preview-container {
@@ -381,6 +436,14 @@ code {
 	padding: 16px;
 	margin-top: 8px;
 	text-align: center;
+	max-width: 100%;
+	overflow: hidden;
+	min-width: 0;
+}
+
+.preview-container svg {
+	max-width: 100%;
+	height: auto;
 }
 
 .small {
@@ -421,8 +484,8 @@ body.dark .sep-dots::before{
 
 .site-footer {
 	text-align: center;
+	font-family: var(--font-sans);
 	color: var(--muted);
-	margin-bottom: var(--spacing-2xl);
 }
 body.dark .site-footer {
 	--accent: #ffffff;
@@ -465,10 +528,48 @@ body.dark .site-footer {
    15. Responsive
    =============================== */
 @media (max-width: 900px) {
+	html {
+		width: 100%;
+		overflow-x: hidden;
+		position: relative;
+		-webkit-text-size-adjust: 100%;
+		-ms-text-size-adjust: 100%;
+	}
+
+	body {
+		width: 100%;
+		overflow-x: hidden;
+		position: relative;
+	}
+
+	.wrap {
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+	}
+
+	.site-header {
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+	}
+
 	.main-layout {
 		grid-template-columns: 1fr;
 		gap: 20px;
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
 	}
+
+	.input-section,
+	.output-section {
+		width: 100%;
+		min-width: 0;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+
 	.site-tagline { display: none; }
 }
 

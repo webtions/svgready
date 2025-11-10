@@ -20,19 +20,16 @@ declare(strict_types=1);
 	<meta name="keywords" content="SVG converter, CSS Data URI, SVG to base64, SVG optimization, SVG to CSS, Data URI generator">
 	<meta property="og:title" content="SVG Ready - Convert SVG to CSS Data URI">
 	<meta property="og:description" content="Instantly convert SVG markup into percent-encoded or base64 Data URIs for cleaner, faster CSS.">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 
-	<!-- Google tag(gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-MTZ6348352"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-		function gtag() { dataLayer.push(arguments); }
-		gtag('js', new Date());
-		gtag('config', 'G-MTZ6348352');
-	</script>
+	<link rel="mask-icon" href="favicon.svg" color="#0000ee">
+	<link rel="icon" href="favicon-dark.svg" media="(prefers-color-scheme: dark)">
+	<link rel="icon" href="favicon.svg" media="(prefers-color-scheme: light)">
+	<link rel="apple-touch-icon" href="favicon.svg">
+	<meta name="msapplication-TileImage" content="favicon.svg">
 
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-	<link rel="stylesheet" href="assets/style.css">
+	<link rel="preload" href="assets/fonts/Recursive-Basic.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet" href="<?php echo \SVGReady\Core::asset('assets/style.css'); ?>">
 
 	<script type="application/ld+json">
 	{
@@ -48,7 +45,7 @@ declare(strict_types=1);
 <body>
 <header class="site-header">
 	<h1 class="site-title">
-		<a href="/" aria-label="SVG Ready Home">SVG <em class="word">Ready</em></a>
+		<a href="/" aria-label="SVG Ready Home">SVG <span class="word">ready</span></a>
 	</h1>
 
 	<nav class="site-nav" aria-label="Main navigation">

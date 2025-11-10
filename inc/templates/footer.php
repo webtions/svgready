@@ -22,10 +22,10 @@ declare(strict_types=1);
 </svg>
     </p>
     <p>Built and maintained by <a href="https://webtions.com" target="_blank" rel="noopener noreferrer">Webtions</a>.</p>
-    <p>&copy; <?php echo date('Y'); ?> Webtions. All rights reserved.</p>
+    <p>&copy; <?php echo date('Y'); ?> Webtions OÜ. All rights reserved.</p>
 </footer>
 
-<script src="assets/scripts.js" defer></script>
+<script src="<?php echo \SVGReady\Core::asset('assets/scripts.js'); ?>" defer></script>
 
 <!-- Analytics -->
 <script>
@@ -42,63 +42,63 @@ declare(strict_types=1);
     }
 );
 </script>
-<script>
-(function () {
-    function getDeviceType()
-    {
-        const ua = navigator.userAgent.toLowerCase();
-        if (ua.includes('mobile') || window.innerWidth < 768) {
-            return 'mobile';
-        }
-        return 'desktop';
-    }
+ <script> (function () {
+	function getDeviceType()
+	{
+		const ua = navigator . userAgent . toLowerCase();
+		return (ua . includes('mobile') || window . innerWidth < 768) ? 'mobile' : 'desktop';
+	}
 
-    function postEvent(event, extra = {})
-    {
-        const payload = {
-        event,
-        screen: screen.width + 'x' + screen.height,
-        lang: navigator.language,
-        ua: navigator.userAgent,
-        referrer: document.referrer,
-        device: getDeviceType(),
-        url: extra.url || null,
-        ts: new Date().toISOString()
-        };
+	function postEvent(event, extra = {})
+	{
+		const payload = {
+			event,
+			screen: screen . width + 'x' + screen . height,
+			lang: navigator . language,
+			ua: navigator . userAgent,
+			referrer: document . referrer,
+			device: getDeviceType(),
+			url: extra . url || null,
+			ts: new Date() . toISOString()
+		};
 
-        fetch(
-            'analytics/track.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-            }
-        );
-    }
+		const json = JSON . stringify(payload);
+		const url  = 'analytics/track.php';
 
-    // Pageview
-    postEvent('pageview');
+		// Use Beacon API if available (non-blocking)
+		if (navigator . sendBeacon) {
+			const blob = new Blob([json], { type: 'application/json' });
+			navigator . sendBeacon(url, blob);
+		} else {
+			// Fallback for older browsers
+			fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: json,
+				keepalive: true
+			});
+		}
+	}
 
-    // Convert button
-    const convertBtn = document.querySelector('form button[type="submit"]');
-    if (convertBtn) {
-        convertBtn.addEventListener(
-            'click', () => {
-            postEvent('convert_click');
-            }
-        );
-    }
+	// Track pageview
+	postEvent('pageview');
 
-    // Outbound links
-    document.addEventListener(
-        'click', (e) => {
-        const link = e.target.closest('a[href^="http"]');
-        if (link && !link.href.includes(location.hostname)) {
-            postEvent('outbound_click', { url: link.href });
-        }
-        }
-    );
+	// Track convert button click
+	const convertBtn = document . querySelector('form button[type="submit"]');
+	if (convertBtn) {
+		convertBtn . addEventListener('click', () => postEvent('convert_click'));
+	}
+
+	// Track outbound link clicks
+	document . addEventListener('click', (e) => {
+		const link = e . target . closest('a[href^="http"]');
+		if (link && ! link . href . includes(location . hostname)) {
+			postEvent('outbound_click', { url: link . href });
+		}
+		});
 })();
-</script>
+</script >
+
 <!-- Fathom - beautiful, simple website analytics -->
 <script src="https://cdn.usefathom.com/script.js" data-site="RMEHBVXI" defer></script>
 <script>

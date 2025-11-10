@@ -19,6 +19,16 @@ use SVGReady\Logger;
 class Core
 {
 	/**
+	 * Global asset version for cache-busting CSS/JS.
+	 *
+	 * Used in combination with file modification time for smarter cache invalidation.
+	 *
+	 * @since 1.0.0
+	 * @var   string
+	 */
+	public const ASSET_VERSION = '1.0.0';
+
+	/**
 	 * Checks if the site is in maintenance mode.
 	 *
 	 * @since  1.0.0
@@ -69,24 +79,23 @@ class Core
 		// Set up global error handler for PHP errors and warnings.
 		set_error_handler(
 			function (int $errno, string $errstr, string $errfile, int $errline): bool {
-				// Map error numbers to error types.
 				$errorTypes = [
-                               E_ERROR             => 'ERROR',
-                               E_WARNING           => 'WARNING',
-                               E_PARSE             => 'PARSE',
-                               E_NOTICE            => 'NOTICE',
-                               E_CORE_ERROR        => 'CORE_ERROR',
-                               E_CORE_WARNING      => 'CORE_WARNING',
-                               E_COMPILE_ERROR     => 'COMPILE_ERROR',
-                               E_COMPILE_WARNING   => 'COMPILE_WARNING',
-                               E_USER_ERROR        => 'USER_ERROR',
-                               E_USER_WARNING      => 'USER_WARNING',
-                               E_USER_NOTICE       => 'USER_NOTICE',
-                               E_STRICT            => 'STRICT',
-                               E_RECOVERABLE_ERROR => 'RECOVERABLE_ERROR',
-                               E_DEPRECATED        => 'DEPRECATED',
-                               E_USER_DEPRECATED   => 'USER_DEPRECATED',
-                              ];
+							   E_ERROR             => 'ERROR',
+							   E_WARNING           => 'WARNING',
+							   E_PARSE             => 'PARSE',
+							   E_NOTICE            => 'NOTICE',
+							   E_CORE_ERROR        => 'CORE_ERROR',
+							   E_CORE_WARNING      => 'CORE_WARNING',
+							   E_COMPILE_ERROR     => 'COMPILE_ERROR',
+							   E_COMPILE_WARNING   => 'COMPILE_WARNING',
+							   E_USER_ERROR        => 'USER_ERROR',
+							   E_USER_WARNING      => 'USER_WARNING',
+							   E_USER_NOTICE       => 'USER_NOTICE',
+							   E_STRICT            => 'STRICT',
+							   E_RECOVERABLE_ERROR => 'RECOVERABLE_ERROR',
+							   E_DEPRECATED        => 'DEPRECATED',
+							   E_USER_DEPRECATED   => 'USER_DEPRECATED',
+							  ];
 
 				$errorType = $errorTypes[$errno] ?? 'UNKNOWN';
 
@@ -96,7 +105,6 @@ class Core
 					['error_number' => $errno]
 				);
 
-				// Return false to continue with normal error handling.
 				return false;
 			}
 		);
@@ -123,30 +131,26 @@ class Core
 		$inputSvg     = $_POST['svg'] ?? '';
 		$converter    = null;
 
-		// Checkbox flags from the form.
 		$stripRootWh    = isset($_POST['stripWh']);
 		$stripRootClass = isset($_POST['stripClass']);
 		$showBase64     = isset($_POST['showBase64']);
 
-		// Centralised error messages.
 		$errors = include __DIR__ . '/../functions/errors.php';
 
 		if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 			try {
-				// Pass the form data and boolean flags to the converter.
 				$converter = new SVGConverter([
-                                               'svg'        => $inputSvg,
-                                               'stripWh'    => $stripRootWh,
-                                               'stripClass' => $stripRootClass,
-                                               'showBase64' => $showBase64,
-                                              ]);
+											   'svg'        => $inputSvg,
+											   'stripWh'    => $stripRootWh,
+											   'stripClass' => $stripRootClass,
+											   'showBase64' => $showBase64,
+											  ]);
 
 				$converter->process();
 
 				$results   = $converter->getResults();
 				$errorCode = $converter->getErrorCode();
 				$errorMsg  = $converter->getError();
-
 
 				if ($errorCode !== null) {
 					switch ($errorCode) {
@@ -175,7 +179,6 @@ class Core
 					$errorMessage = $errorMsg;
 				}
 
-				// Compute size/percent differences if valid.
 				if (! empty($inputSvg) && ! empty($results['normalized'])) {
 					$inputSize  = strlen($inputSvg);
 					$outputSize = strlen((string) $results['normalized']);
@@ -186,18 +189,16 @@ class Core
 					$results['percent']   = ($inputSize > 0) ? (int) round(($diff / $inputSize) * 100) : 0;
 				}
 			} catch (\Throwable $e) {
-				// Log the exception to debug.log.
 				Logger::exception($e, [
-                                       'input_svg_length' => strlen($inputSvg),
-                                       'request_method'   => $_SERVER['REQUEST_METHOD'] ?? 'GET',
-                                      ]);
+									   'input_svg_length' => strlen($inputSvg),
+									   'request_method'   => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+									  ]);
 
 				$errorTitle   = $errors['server_error']['title'] ?? '';
 				$errorMessage = $errors['server_error']['text'] ?? '';
 			}
 		}
 
-		// Return the complete context for all templates.
 		return [
                 'errorMessage'   => $errorMessage,
                 'errorTitle'     => $errorTitle,
@@ -209,5 +210,21 @@ class Core
                 'isAjax'         => false,
                 'converter'      => $converter,
                ];
+	}
+
+	/**
+	 * Returns a cache-busted asset path using version + file modification time.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string $path Relative path from project root (e.g. 'assets/style.css').
+	 * @return string Fully formatted asset URL with query string.
+	 */
+	public static function asset(string $path): string
+	{
+		$fullPath = __DIR__ . '/../../' . ltrim($path, '/');
+		$mtime    = file_exists($fullPath) ? filemtime($fullPath) : time();
+
+		return $path . '?v=' . self::ASSET_VERSION . '-' . $mtime;
 	}
 }

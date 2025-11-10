@@ -82,9 +82,9 @@
 	<!-- Enforce aligning adjacent assignment operators (e.g. "=") -->
 	<rule ref="Generic.Formatting.MultipleStatementAlignment">
 		<properties>
-			<property name="alignAtEnd" value="false" />
-			<property name="error" value="true" />
-			<property name="maxPadding" value="50" />
+			<property name="alignAtEnd" value="false"/>
+			<property name="maxPadding" value="10"/>
+			<property name="error" value="false"/>
 		</properties>
 	</rule>
 
