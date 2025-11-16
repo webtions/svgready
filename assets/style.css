@@ -463,7 +463,8 @@ body.dark .btn {
 	text-transform: uppercase;
 	font-family: var(--font-sans);
 	letter-spacing: 0.1ch;
-	display: inline-block;
+	display: block;
+	width: 100%;
 }
 
 body.dark .save-file-btn {

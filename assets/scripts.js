@@ -6,20 +6,18 @@
 document.addEventListener('DOMContentLoaded', () => {
 
 	/* ==========================
-	THEME TOGGLE
-	========================== */
+	   THEME TOGGLE
+	   ========================== */
 	const toggle = document.getElementById('theme-toggle');
 	const saved = localStorage.getItem('theme');
 	const root = document.documentElement;
 
-	// Apply saved or system theme
 	if (saved) {
 		root.classList.toggle('dark', saved === 'dark');
 	} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
 		root.classList.add('dark');
 	}
 
-	// Handle manual toggle
 	if (toggle) {
 		toggle.addEventListener('click', () => {
 			const isDark = root.classList.toggle('dark');
@@ -27,49 +25,52 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 
-/* ==========================
-   SVG FILE UPLOAD → TEXTAREA
-   ========================== */
-const uploadLink = document.querySelector('.upload-link');
-const svgFileInput = document.getElementById('svgFile');
-const svgTextarea = document.getElementById('svg');
+	/* ==========================
+	   SHARED ELEMENTS
+	   ========================== */
+	const outputSection = document.querySelector('.output-section');
+	const form = document.querySelector('.input-section form');
+	const svgInput = form ? form.querySelector('#svg') : null;
 
-if (uploadLink && svgFileInput && svgTextarea) {
+	/* ==========================
+	   SVG FILE UPLOAD → TEXTAREA
+	   ========================== */
+	const uploadLink = document.querySelector('.upload-link');
+	const svgFileInput = document.getElementById('svgFile');
 
-	uploadLink.addEventListener('click', () => {
-		svgFileInput.click();
-	});
+	if (uploadLink && svgFileInput && svgInput) {
+		uploadLink.addEventListener('click', () => {
+			svgFileInput.click();
+		});
 
-	svgFileInput.addEventListener('change', () => {
-		const file = svgFileInput.files[0];
-		if (!file) return;
+		svgFileInput.addEventListener('change', () => {
+			const file = svgFileInput.files[0];
+			if (!file) return;
 
-		if (!file.type.includes('svg')) {
+			if (!file.name.toLowerCase().endsWith('.svg')) {
+				if (outputSection) {
+					outputSection.classList.add('has-error');
+					outputSection.innerHTML = `
+						<div class="error-state" role="alert">
+							<span class="error-icon" aria-hidden="true"></span>
+							<h3>Invalid SVG file</h3>
+							<p>Please upload a valid .svg file.</p>
+						</div>
+					`;
+				}
 
-			if (outputSection) {
-				outputSection.classList.add('has-error');
-				outputSection.innerHTML = `
-					<div class="error-state" role="alert">
-						<span class="error-icon" aria-hidden="true"></span>
-						<h3>Invalid SVG file</h3>
-						<p>Please upload a valid .svg file.</p>
-					</div>
-				`;
+				svgFileInput.value = '';
+				return;
 			}
 
-			svgFileInput.value = '';
-			return;
-		}
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				svgInput.value = e.target.result;
+			};
 
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			// Only update textarea — do NOT touch output section here
-			svgTextarea.value = e.target.result;
-		};
-
-		reader.readAsText(file);
-	});
-}
+			reader.readAsText(file);
+		});
+	}
 
 	/* ==========================
 	   COPY BUTTON HANDLING
@@ -88,19 +89,20 @@ if (uploadLink && svgFileInput && svgTextarea) {
 	}
 
 	function fallbackCopy(text, button) {
-		const textarea = document.createElement('textarea');
-		textarea.value = text;
-		textarea.style.position = 'fixed';
-		textarea.style.left = '-9999px';
-		document.body.appendChild(textarea);
-		textarea.select();
+		const temp = document.createElement('textarea');
+		temp.value = text;
+		temp.style.position = 'fixed';
+		temp.style.left = '-9999px';
+		document.body.appendChild(temp);
+		temp.select();
+
 		try {
 			document.execCommand('copy');
 			setCopiedState(button, true);
 		} catch {
 			setCopiedState(button, false);
 		} finally {
-			document.body.removeChild(textarea);
+			document.body.removeChild(temp);
 		}
 	}
 
@@ -114,7 +116,6 @@ if (uploadLink && svgFileInput && svgTextarea) {
 		}, 2000);
 	}
 
-	// Copy button click handler (delegated)
 	document.body.addEventListener('click', (e) => {
 		const button = e.target.closest('.copy-btn');
 		if (!button) return;
@@ -123,35 +124,54 @@ if (uploadLink && svgFileInput && svgTextarea) {
 		if (!codeEl) return;
 
 		const text = codeEl.innerText.trim();
+		if (!text) return;
+
 		copyToClipboard(text, button);
 	});
 
 	/* ==========================
 	   SAVE FILE BUTTON HANDLING
 	   ========================== */
-	function saveSvgFile(text, button) {
-		try {
-			// Create a Blob with SVG MIME type
-			const blob = new Blob([text], { type: 'image/svg+xml' });
+	async function saveSvgFile(text, button) {
+		const filename = `SvgReady-${Date.now()}.svg`;
 
-			// Create object URL
+		try {
+			if ('showSaveFilePicker' in window) {
+				try {
+					const fileHandle = await window.showSaveFilePicker({
+						suggestedName: filename,
+						types: [{
+							description: 'SVG files',
+							accept: { 'image/svg+xml': ['.svg'] }
+						}]
+					});
+
+					const writable = await fileHandle.createWritable();
+					await writable.write(text);
+					await writable.close();
+
+					setSavedState(button, true);
+					return;
+				} catch (err) {
+					if (err.name === 'AbortError') return;
+				}
+			}
+
+			// Fallback
+			const blob = new Blob([text], { type: 'image/svg+xml' });
 			const url = URL.createObjectURL(blob);
 
-			// Create temporary anchor element
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = 'svgready-output.svg';
+			a.download = filename;
 			document.body.appendChild(a);
-
-			// Trigger download
 			a.click();
-
-			// Cleanup
 			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
 
-			// Visual feedback
+			setTimeout(() => URL.revokeObjectURL(url), 100);
+
 			setSavedState(button, true);
+
 		} catch {
 			setSavedState(button, false);
 		}
@@ -167,17 +187,14 @@ if (uploadLink && svgFileInput && svgTextarea) {
 		}, 2000);
 	}
 
-	// Save file button click handler (delegated)
 	document.body.addEventListener('click', (e) => {
 		const button = e.target.closest('.save-file-btn');
 		if (!button) return;
 
-		// Find the "Normalized SVG" section's code element
-		const outputSection = button.closest('.output-section') || document.querySelector('.output-section');
-		if (!outputSection) return;
+		const section = button.closest('.output-section') || outputSection;
+		if (!section) return;
 
-		// Find the article with "Normalized SVG" heading
-		const articles = outputSection.querySelectorAll('.result-block');
+		const articles = section.querySelectorAll('.result-block');
 		let normalizedCodeEl = null;
 
 		for (const article of articles) {
@@ -199,15 +216,10 @@ if (uploadLink && svgFileInput && svgTextarea) {
 	/* ==========================
 	   AJAX CONVERSION HANDLER
 	   ========================== */
-	const form = document.querySelector('.input-section form');
-	const outputSection = document.querySelector('.output-section');
-	const svgInput = form ? form.querySelector('#svg') : null;
-
 	if (form && outputSection && svgInput) {
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
 
-			// Empty input error
 			if (!svgInput.value.trim()) {
 				outputSection.classList.add('has-error');
 				outputSection.innerHTML = `
@@ -220,7 +232,6 @@ if (uploadLink && svgFileInput && svgTextarea) {
 				return;
 			}
 
-			// Processing state
 			const formData = new FormData(form);
 			outputSection.classList.remove('has-error');
 			outputSection.innerHTML = '<div class="empty-state"><p>Processing...</p></div>';
@@ -232,7 +243,6 @@ if (uploadLink && svgFileInput && svgTextarea) {
 				});
 				const html = await res.text();
 
-				// Ensure consistent error styling
 				if (html.includes('error-state')) {
 					outputSection.classList.add('has-error');
 				} else {
@@ -252,7 +262,6 @@ if (uploadLink && svgFileInput && svgTextarea) {
 			}
 		});
 
-		// Shortcut: Ctrl + Enter or Cmd + Enter triggers conversion
 		svgInput.addEventListener('keydown', (e) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 				form.requestSubmit();

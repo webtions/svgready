@@ -113,9 +113,9 @@ $errorTitle = $errorTitle ?? '';
 	<?php endif; ?>
 
 	<?php if (! empty($results['normalized'])) : ?>
-		<article class="result-block save-file-block">
+		<div class="save-file-block">
 			<button class="save-file-btn">Save File</button>
-		</article>
+		</div>
 	<?php endif; ?>
 
 	<?php if (! empty($results['benchmark'])) : ?>
