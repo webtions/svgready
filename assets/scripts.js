@@ -1,6 +1,6 @@
 /**
- * SVG Ready – Clipboard, Theme Toggle, and AJAX Conversion
- * Simple client-side logic for copying, theme switching, and async conversion.
+ * SVG Ready – Clipboard, Theme Toggle, Upload, Save, AJAX Convert
+ * Fully optimised, typed (JSDoc), with error boundaries. Uses direct download only.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,43 +8,65 @@ document.addEventListener('DOMContentLoaded', () => {
 	/* ==========================
 	   THEME TOGGLE
 	   ========================== */
+
+	/** @type {HTMLElement|null} */
 	const toggle = document.getElementById('theme-toggle');
-	const saved = localStorage.getItem('theme');
+
+	/** @type {string|null} */
+	const savedTheme = localStorage.getItem('theme');
+
+	/** @type {HTMLElement} */
 	const root = document.documentElement;
 
-	if (saved) {
-		root.classList.toggle('dark', saved === 'dark');
-	} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		root.classList.add('dark');
-	}
+	try {
+		if (savedTheme) {
+			root.classList.toggle('dark', savedTheme === 'dark');
+		} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			root.classList.add('dark');
+		}
+	} catch {}
 
 	if (toggle) {
 		toggle.addEventListener('click', () => {
-			const isDark = root.classList.toggle('dark');
-			localStorage.setItem('theme', isDark ? 'dark' : 'light');
+			try {
+				const dark = root.classList.toggle('dark');
+				localStorage.setItem('theme', dark ? 'dark' : 'light');
+			} catch {}
 		});
 	}
 
 	/* ==========================
 	   SHARED ELEMENTS
 	   ========================== */
+
+	/** @type {HTMLElement|null} */
 	const outputSection = document.querySelector('.output-section');
+
+	/** @type {HTMLFormElement|null} */
 	const form = document.querySelector('.input-section form');
+
+	/** @type {HTMLTextAreaElement|null} */
 	const svgInput = form ? form.querySelector('#svg') : null;
 
 	/* ==========================
-	   SVG FILE UPLOAD → TEXTAREA
+	   UPLOAD → TEXTAREA
 	   ========================== */
+
+	/** @type {HTMLElement|null} */
 	const uploadLink = document.querySelector('.upload-link');
+
+	/** @type {HTMLInputElement|null} */
 	const svgFileInput = document.getElementById('svgFile');
 
 	if (uploadLink && svgFileInput && svgInput) {
 		uploadLink.addEventListener('click', () => {
-			svgFileInput.click();
+			try {
+				svgFileInput.click();
+			} catch {}
 		});
 
 		svgFileInput.addEventListener('change', () => {
-			const file = svgFileInput.files[0];
+			const file = svgFileInput.files?.[0];
 			if (!file) return;
 
 			if (!file.name.toLowerCase().endsWith('.svg')) {
@@ -52,179 +74,177 @@ document.addEventListener('DOMContentLoaded', () => {
 					outputSection.classList.add('has-error');
 					outputSection.innerHTML = `
 						<div class="error-state" role="alert">
-							<span class="error-icon" aria-hidden="true"></span>
+							<span class="error-icon"></span>
 							<h3>Invalid SVG file</h3>
 							<p>Please upload a valid .svg file.</p>
 						</div>
 					`;
 				}
-
 				svgFileInput.value = '';
 				return;
 			}
 
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				svgInput.value = e.target.result;
-			};
-
-			reader.readAsText(file);
+			try {
+				const reader = new FileReader();
+				reader.onload = e => {
+					if (svgInput) svgInput.value = e.target?.result || '';
+				};
+				reader.readAsText(file);
+			} catch {}
 		});
 	}
 
 	/* ==========================
-	   COPY BUTTON HANDLING
+	   COPY HANDLING
 	   ========================== */
+
+	/**
+	 * @param {string} text
+	 * @param {HTMLButtonElement} button
+	 */
 	async function copyToClipboard(text, button) {
 		try {
 			if (navigator.clipboard && window.isSecureContext) {
 				await navigator.clipboard.writeText(text);
-				setCopiedState(button, true);
+				setCopyState(button, true);
 			} else {
 				fallbackCopy(text, button);
 			}
 		} catch {
-			setCopiedState(button, false);
+			setCopyState(button, false);
 		}
 	}
 
+	/**
+	 * @param {string} text
+	 * @param {HTMLButtonElement} button
+	 */
 	function fallbackCopy(text, button) {
-		const temp = document.createElement('textarea');
-		temp.value = text;
-		temp.style.position = 'fixed';
-		temp.style.left = '-9999px';
-		document.body.appendChild(temp);
-		temp.select();
-
 		try {
-			document.execCommand('copy');
-			setCopiedState(button, true);
-		} catch {
-			setCopiedState(button, false);
-		} finally {
+			const temp = document.createElement('textarea');
+			temp.value = text;
+			temp.style.position = 'fixed';
+			temp.style.left = '-9999px';
+			document.body.appendChild(temp);
+			temp.select();
+
+			try {
+				document.execCommand('copy');
+				setCopyState(button, true);
+			} catch {
+				setCopyState(button, false);
+			}
+
 			document.body.removeChild(temp);
+		} catch {
+			setCopyState(button, false);
 		}
 	}
 
-	function setCopiedState(button, success) {
+	/**
+	 * @param {HTMLButtonElement} button
+	 * @param {boolean} ok
+	 */
+	function setCopyState(button, ok) {
 		const original = button.textContent;
-		button.textContent = success ? 'Copied!' : 'Failed';
-		button.classList.add(success ? 'copied' : 'error');
+		button.textContent = ok ? 'Copied!' : 'Failed';
+		button.classList.add(ok ? 'copied' : 'error');
 		setTimeout(() => {
 			button.textContent = original;
 			button.classList.remove('copied', 'error');
 		}, 2000);
 	}
 
-	document.body.addEventListener('click', (e) => {
+	document.body.addEventListener('click', e => {
+		/** @type {HTMLButtonElement|null} */
 		const button = e.target.closest('.copy-btn');
 		if (!button) return;
 
-		const codeEl = button.closest('article')?.querySelector('code');
-		if (!codeEl) return;
+		try {
+			const code = button.closest('article')
+				?.querySelector('code')
+				?.innerText.trim();
 
-		const text = codeEl.innerText.trim();
-		if (!text) return;
-
-		copyToClipboard(text, button);
+			if (code) copyToClipboard(code, button);
+		} catch {}
 	});
 
 	/* ==========================
-	   SAVE FILE BUTTON HANDLING
+	   SAVE AS SVG (DIRECT DOWNLOAD)
 	   ========================== */
-	async function saveSvgFile(text, button) {
+
+	/**
+	 * @param {string} text
+	 * @param {HTMLButtonElement} button
+	 */
+	function saveSvgFile(text, button) {
 		const filename = `SvgReady-${Date.now()}.svg`;
 
 		try {
-			if ('showSaveFilePicker' in window) {
-				try {
-					const fileHandle = await window.showSaveFilePicker({
-						suggestedName: filename,
-						types: [{
-							description: 'SVG files',
-							accept: { 'image/svg+xml': ['.svg'] }
-						}]
-					});
-
-					const writable = await fileHandle.createWritable();
-					await writable.write(text);
-					await writable.close();
-
-					setSavedState(button, true);
-					return;
-				} catch (err) {
-					if (err.name === 'AbortError') return;
-				}
-			}
-
-			// Fallback
 			const blob = new Blob([text], { type: 'image/svg+xml' });
 			const url = URL.createObjectURL(blob);
 
 			const a = document.createElement('a');
 			a.href = url;
 			a.download = filename;
+
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
 
-			setTimeout(() => URL.revokeObjectURL(url), 100);
+			setTimeout(() => URL.revokeObjectURL(url), 150);
 
-			setSavedState(button, true);
+			setSaveState(button, true);
 
 		} catch {
-			setSavedState(button, false);
+			setSaveState(button, false);
 		}
 	}
 
-	function setSavedState(button, success) {
+	/**
+	 * @param {HTMLButtonElement} button
+	 * @param {boolean} ok
+	 */
+	function setSaveState(button, ok) {
 		const original = button.textContent;
-		button.textContent = success ? 'Saved!' : 'Failed';
-		button.classList.add(success ? 'saved' : 'error');
+		button.textContent = ok ? 'Saved!' : 'Failed';
+		button.classList.add(ok ? 'saved' : 'error');
 		setTimeout(() => {
 			button.textContent = original;
 			button.classList.remove('saved', 'error');
 		}, 2000);
 	}
 
-	document.body.addEventListener('click', (e) => {
+	document.body.addEventListener('click', e => {
+		/** @type {HTMLButtonElement|null} */
 		const button = e.target.closest('.save-file-btn');
 		if (!button) return;
 
-		const section = button.closest('.output-section') || outputSection;
-		if (!section) return;
+		try {
+			const section = button.closest('.output-section') || outputSection;
+			if (!section) return;
 
-		const articles = section.querySelectorAll('.result-block');
-		let normalizedCodeEl = null;
+			const article = [...section.querySelectorAll('.result-block')]
+				.find(a => a.querySelector('h4')?.textContent.includes('Normalized SVG'));
 
-		for (const article of articles) {
-			const heading = article.querySelector('h4');
-			if (heading && heading.textContent.includes('Normalized SVG')) {
-				normalizedCodeEl = article.querySelector('code');
-				break;
-			}
-		}
+			const code = article?.querySelector('code')?.innerText.trim();
+			if (code) saveSvgFile(code, button);
 
-		if (!normalizedCodeEl) return;
-
-		const text = normalizedCodeEl.innerText.trim();
-		if (!text) return;
-
-		saveSvgFile(text, button);
+		} catch {}
 	});
 
 	/* ==========================
-	   AJAX CONVERSION HANDLER
+	   AJAX CONVERSION
 	   ========================== */
 	if (form && outputSection && svgInput) {
-		form.addEventListener('submit', async (e) => {
+		form.addEventListener('submit', async e => {
 			e.preventDefault();
 
 			if (!svgInput.value.trim()) {
 				outputSection.classList.add('has-error');
 				outputSection.innerHTML = `
 					<div class="error-state" role="alert">
-						<span class="error-icon" aria-hidden="true"></span>
+						<span class="error-icon"></span>
 						<h3>Nothing to convert</h3>
 						<p>Please paste your SVG markup first.</p>
 					</div>
@@ -232,29 +252,24 @@ document.addEventListener('DOMContentLoaded', () => {
 				return;
 			}
 
-			const formData = new FormData(form);
 			outputSection.classList.remove('has-error');
 			outputSection.innerHTML = '<div class="empty-state"><p>Processing...</p></div>';
 
 			try {
 				const res = await fetch('ajax.php', {
 					method: 'POST',
-					body: formData
+					body: new FormData(form)
 				});
+
 				const html = await res.text();
 
-				if (html.includes('error-state')) {
-					outputSection.classList.add('has-error');
-				} else {
-					outputSection.classList.remove('has-error');
-				}
-
+				outputSection.classList.toggle('has-error', html.includes('error-state'));
 				outputSection.innerHTML = html;
 			} catch {
 				outputSection.classList.add('has-error');
 				outputSection.innerHTML = `
 					<div class="error-state" role="alert">
-						<span class="error-icon" aria-hidden="true"></span>
+						<span class="error-icon"></span>
 						<h3>Something went wrong</h3>
 						<p>Network error. Please try again.</p>
 					</div>
@@ -262,9 +277,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		});
 
-		svgInput.addEventListener('keydown', (e) => {
+		svgInput.addEventListener('keydown', e => {
 			if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-				form.requestSubmit();
+				try {
+					form.requestSubmit();
+				} catch {}
 			}
 		});
 	}
