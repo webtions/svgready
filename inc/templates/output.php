@@ -128,6 +128,7 @@ $errorTitle = $errorTitle ?? '';
 	<div class="empty-state" role="status">
 		<h3>Ready to convert your SVG?</h3>
 		<p>Paste your SVG markup in the form and click <strong>Convert</strong> to begin.</p>
+		<?php require __DIR__ . '/tips.php'; ?>
 	</div>
 <?php endif; ?>
 
