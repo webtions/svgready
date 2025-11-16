@@ -6,22 +6,23 @@
 document.addEventListener('DOMContentLoaded', () => {
 
 	/* ==========================
-	   THEME TOGGLE
-	   ========================== */
+	THEME TOGGLE
+	========================== */
 	const toggle = document.getElementById('theme-toggle');
 	const saved = localStorage.getItem('theme');
+	const root = document.documentElement;
 
 	// Apply saved or system theme
 	if (saved) {
-		document.body.classList.toggle('dark', saved === 'dark');
+		root.classList.toggle('dark', saved === 'dark');
 	} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		document.body.classList.add('dark');
+		root.classList.add('dark');
 	}
 
 	// Handle manual toggle
 	if (toggle) {
 		toggle.addEventListener('click', () => {
-			const isDark = document.body.classList.toggle('dark');
+			const isDark = root.classList.toggle('dark');
 			localStorage.setItem('theme', isDark ? 'dark' : 'light');
 		});
 	}
