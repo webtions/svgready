@@ -15,8 +15,8 @@ declare(strict_types=1);
 	<h3 id="input-heading" class="sr-only">Input SVG</h3>
 
 	<form method="post" aria-describedby="form-instructions">
-		<label for="svg" class="label">Paste raw SVG markup</label>
-
+		<label for="svg" class="label">Paste raw SVG markup or <span class="upload-link">upload your SVG file</span></label>
+		<input type="file" id="svgFile" accept=".svg,image/svg+xml" style="display:none;">
 		<textarea
 			id="svg"
 			name="svg"

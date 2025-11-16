@@ -388,6 +388,12 @@ input[type='text']:focus {
 	margin-left: 4px;
 }
 
+.upload-link {
+	text-decoration: underline;
+	color: var(--primary);
+	cursor: pointer;
+}
+
 /* ===============================
    10. Buttons
    =============================== */
@@ -436,6 +442,45 @@ body.dark .btn {
 }
 
 .copy-btn.error {
+	background: #ef4444;
+}
+
+.save-file-block {
+	text-align: center;
+	padding: var(--spacing-lg) var(--spacing-md);
+}
+
+.save-file-btn {
+	background: var(--color-primary);
+	color: #fff;
+	border: 0;
+	border-radius: var(--border-radius);
+	padding: var(--spacing-md) var(--spacing-xl);
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	font-size: var(--font-size-md);
+	text-transform: uppercase;
+	font-family: var(--font-sans);
+	letter-spacing: 0.1ch;
+	display: inline-block;
+}
+
+body.dark .save-file-btn {
+	color: #000000;
+}
+
+.save-file-btn:hover {
+	background: var(--color-accent);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.save-file-btn.saved {
+	background: var(--color-success);
+}
+
+.save-file-btn.error {
 	background: #ef4444;
 }
 

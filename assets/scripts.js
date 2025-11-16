@@ -27,6 +27,50 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 
+/* ==========================
+   SVG FILE UPLOAD → TEXTAREA
+   ========================== */
+const uploadLink = document.querySelector('.upload-link');
+const svgFileInput = document.getElementById('svgFile');
+const svgTextarea = document.getElementById('svg');
+
+if (uploadLink && svgFileInput && svgTextarea) {
+
+	uploadLink.addEventListener('click', () => {
+		svgFileInput.click();
+	});
+
+	svgFileInput.addEventListener('change', () => {
+		const file = svgFileInput.files[0];
+		if (!file) return;
+
+		if (!file.type.includes('svg')) {
+
+			if (outputSection) {
+				outputSection.classList.add('has-error');
+				outputSection.innerHTML = `
+					<div class="error-state" role="alert">
+						<span class="error-icon" aria-hidden="true"></span>
+						<h3>Invalid SVG file</h3>
+						<p>Please upload a valid .svg file.</p>
+					</div>
+				`;
+			}
+
+			svgFileInput.value = '';
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			// Only update textarea — do NOT touch output section here
+			svgTextarea.value = e.target.result;
+		};
+
+		reader.readAsText(file);
+	});
+}
+
 	/* ==========================
 	   COPY BUTTON HANDLING
 	   ========================== */
@@ -80,6 +124,76 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		const text = codeEl.innerText.trim();
 		copyToClipboard(text, button);
+	});
+
+	/* ==========================
+	   SAVE FILE BUTTON HANDLING
+	   ========================== */
+	function saveSvgFile(text, button) {
+		try {
+			// Create a Blob with SVG MIME type
+			const blob = new Blob([text], { type: 'image/svg+xml' });
+
+			// Create object URL
+			const url = URL.createObjectURL(blob);
+
+			// Create temporary anchor element
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'svgready-output.svg';
+			document.body.appendChild(a);
+
+			// Trigger download
+			a.click();
+
+			// Cleanup
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			// Visual feedback
+			setSavedState(button, true);
+		} catch {
+			setSavedState(button, false);
+		}
+	}
+
+	function setSavedState(button, success) {
+		const original = button.textContent;
+		button.textContent = success ? 'Saved!' : 'Failed';
+		button.classList.add(success ? 'saved' : 'error');
+		setTimeout(() => {
+			button.textContent = original;
+			button.classList.remove('saved', 'error');
+		}, 2000);
+	}
+
+	// Save file button click handler (delegated)
+	document.body.addEventListener('click', (e) => {
+		const button = e.target.closest('.save-file-btn');
+		if (!button) return;
+
+		// Find the "Normalized SVG" section's code element
+		const outputSection = button.closest('.output-section') || document.querySelector('.output-section');
+		if (!outputSection) return;
+
+		// Find the article with "Normalized SVG" heading
+		const articles = outputSection.querySelectorAll('.result-block');
+		let normalizedCodeEl = null;
+
+		for (const article of articles) {
+			const heading = article.querySelector('h4');
+			if (heading && heading.textContent.includes('Normalized SVG')) {
+				normalizedCodeEl = article.querySelector('code');
+				break;
+			}
+		}
+
+		if (!normalizedCodeEl) return;
+
+		const text = normalizedCodeEl.innerText.trim();
+		if (!text) return;
+
+		saveSvgFile(text, button);
 	});
 
 	/* ==========================
