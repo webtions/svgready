@@ -42,61 +42,22 @@ declare(strict_types=1);
     }
 );
 </script>
- <script> (function () {
-	function getDeviceType()
-	{
-		const ua = navigator . userAgent . toLowerCase();
-		return (ua . includes('mobile') || window . innerWidth < 768) ? 'mobile' : 'desktop';
-	}
 
-	function postEvent(event, extra = {})
-	{
-		const payload = {
-			event,
-			screen: screen . width + 'x' + screen . height,
-			lang: navigator . language,
-			ua: navigator . userAgent,
-			referrer: document . referrer,
-			device: getDeviceType(),
-			url: extra . url || null,
-			ts: new Date() . toISOString()
-		};
+<!-- Webtions Analytics -->
+<script src="https://tracker.webtions.com/at.js"
+	data-site="e238a3344cf4e599"
+	data-endpoint="https://dash.webtions.com/"
+	defer></script>
 
-		const json = JSON . stringify(payload);
-		const url  = 'analytics/track.php';
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+	const form = document.querySelector('form');
+	if (!form) return;
 
-		// Use Beacon API if available (non-blocking)
-		if (navigator . sendBeacon) {
-			const blob = new Blob([json], { type: 'application/json' });
-			navigator . sendBeacon(url, blob);
-		} else {
-			// Fallback for older browsers
-			fetch(url, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: json,
-				keepalive: true
-			});
-		}
-	}
-
-	// Track pageview
-	postEvent('pageview');
-
-	// Track convert button click
-	const convertBtn = document . querySelector('form button[type="submit"]');
-	if (convertBtn) {
-		convertBtn . addEventListener('click', () => postEvent('convert_click'));
-	}
-
-	// Track outbound link clicks
-	document . addEventListener('click', (e) => {
-		const link = e . target . closest('a[href^="http"]');
-		if (link && ! link . href . includes(location . hostname)) {
-			postEvent('outbound_click', { url: link . href });
-		}
-		});
-})();
+	form.addEventListener('submit', () => {
+		if (window.at) window.at.track('Convert');
+	});
+});
 </script>
 
 <!-- Fathom - beautiful, simple website analytics -->
