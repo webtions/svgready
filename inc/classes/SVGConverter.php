@@ -251,12 +251,34 @@ class SVGConverter
 		$this->errorMessage = $message;
 		$this->errorDebug   = $debug;
 
+		$context = [
+			'error_code'       => $code,
+			'input_svg_length' => strlen($this->inputSvg),
+			'debug_details'    => $debug,
+		];
+
+		// Include SVG snippet for invalid SVG errors if LOG_SVG_CONTENT is enabled.
+		$invalidSvgCodes = [
+			self::ERROR_INVALID_ROOT,
+			self::ERROR_MALFORMED_XML,
+			self::ERROR_INVALID_ATTRIBUTE,
+			self::ERROR_NESTING_DEEP,
+			self::ERROR_XML_PARSE,
+		];
+
+		if (in_array($code, $invalidSvgCodes, true)) {
+			$logSvgContent = Logger::getEnv('LOG_SVG_CONTENT');
+			if ($logSvgContent === 'true' || $logSvgContent === '1') {
+				$svgSnippet = substr($this->inputSvg, 0, 500);
+				if (strlen($this->inputSvg) > 500) {
+					$svgSnippet .= '... [truncated]';
+				}
+				$context['svg_input'] = $svgSnippet;
+			}
+		}
+
 		// Log the error to debug.log.
-		Logger::error($message, [
-                                 'error_code'       => $code,
-                                 'input_svg_length' => strlen($this->inputSvg),
-                                 'debug_details'    => $debug,
-                                ]);
+		Logger::error($message, $context);
 	}
 
 	/**

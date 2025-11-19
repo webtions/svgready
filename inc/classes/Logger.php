@@ -41,6 +41,13 @@ class Logger
 	private static string $logFile = '';
 
 	/**
+	 * Cached .env values.
+	 *
+	 * @var array<string,string>|null
+	 */
+	private static ?array $env = null;
+
+	/**
 	 * Initialize the logger with the log file path.
 	 *
 	 * @since  1.0.0
@@ -49,21 +56,78 @@ class Logger
 	private static function init(): void
 	{
 		if (self::$logFile === '') {
-			// Set log file path to root directory (one level up from inc/classes).
+            // Root (public_html) – two levels up from inc/classes.
 			$logPath = dirname(__DIR__, 2) . '/debug.log';
 
-			// Validate path to prevent path traversal attacks.
 			$realBasePath = realpath(dirname(__DIR__, 2));
 			$realLogPath  = realpath(dirname($logPath));
 
-			// Ensure log file is within the base directory.
 			if ($realBasePath === false || $realLogPath === false || strpos($realLogPath, $realBasePath) !== 0) {
-				// Fallback to a safe path if validation fails.
 				$logPath = dirname(__DIR__, 2) . '/debug.log';
 			}
 
 			self::$logFile = $logPath;
 		}
+	}
+
+	/**
+	 * Load .env once and return its values as an array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string,string>
+	 */
+	private static function loadEnv(): array
+	{
+		if (self::$env !== null) {
+			return self::$env;
+		}
+
+		self::$env = [];
+
+		$envPath = dirname(__DIR__, 2) . '/.env';
+		if (! file_exists($envPath)) {
+			return self::$env;
+		}
+
+		$lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+		if ($lines === false) {
+			return self::$env;
+		}
+
+		foreach ($lines as $line) {
+			$line = trim($line);
+			if ($line === '' || $line[0] === '#' || ! str_contains($line, '=')) {
+				continue;
+			}
+
+			[
+             $key,
+             $value,
+            ]      = explode('=', $line, 2);
+			$key   = trim($key);
+			$value = trim($value);
+
+			if ($key !== '') {
+				self::$env[$key] = $value;
+			}
+		}
+
+		return self::$env;
+	}
+
+	/**
+	 * Get a single value from .env.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string $key Env key.
+	 * @return string|null
+	 */
+	public static function getEnv(string $key): ?string
+	{
+		$env = self::loadEnv();
+		return $env[$key] ?? null;
 	}
 
 	/**
@@ -83,14 +147,14 @@ class Logger
 		$timestamp  = date('Y-m-d H:i:s');
 		$contextStr = '';
 
-		// Sanitize message to prevent log injection (remove newlines and control characters).
 		$sanitizedMessage = preg_replace('/[\r\n\x00-\x1F\x7F]/', '', $message);
-
-		// Sanitize level to prevent injection.
-		$sanitizedLevel = preg_replace('/[^A-Z0-9_]/', '', strtoupper($level));
+		$sanitizedLevel   = preg_replace('/[^A-Z0-9_]/', '', strtoupper($level));
 
 		if (! empty($context)) {
-			$contextStr = ' | Context: ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+			$contextStr = ' | Context: ' . json_encode(
+				$context,
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+			);
 		}
 
 		$logEntry = sprintf(
@@ -101,60 +165,117 @@ class Logger
 			$contextStr
 		);
 
-		// Ensure the directory exists and is writable.
 		$logDir = dirname(self::$logFile);
 		if (! is_dir($logDir)) {
 			@mkdir($logDir, 0700, true);
 		}
 
-		// Rotate log file if it exceeds maximum size.
 		self::rotateLogIfNeeded();
 
-		// Write to log file (append mode) with restricted permissions.
 		$result = @file_put_contents(self::$logFile, $logEntry, FILE_APPEND | LOCK_EX);
 
-		// Set restrictive file permissions (owner read/write only).
 		if ($result !== false && file_exists(self::$logFile)) {
 			@chmod(self::$logFile, 0600);
 		}
 
-		// If writing failed, try to log to PHP error log as fallback.
-		if ($result === false) {
-			$error = error_get_last();
-			error_log(
-				sprintf(
-					'Logger failed to write to %s: %s. Original message: [%s] %s',
-					self::$logFile,
-					$error['message'] ?? 'Unknown error',
-					$level,
-					$message
-				)
-			);
-		}
+		// Intentionally no PHP error_log() fallback:
+		// you rely on debug.log as the single source of truth.
 	}
 
 	/**
 	 * Log an error message.
 	 *
-	 * @param string $message The error message.
-	 * @param array  $context Additional context data.
+	 * @since 1.0.0
 	 *
-	 * @since  1.0.0
+	 * @param  string $message Error message.
+	 * @param  array  $context Extra context.
 	 * @return void
 	 */
 	public static function error(string $message, array $context = []): void
 	{
-		self::log($message, 'ERROR', $context);
-		self::sendToLogSnag($message, 'ERROR', $context);
+		// If error_code is present, use user-friendly title from errors.php.
+		$errorCode    = $context['error_code'] ?? null;
+		$logMessage   = $message;
+		$logSnagTitle = $message;
+
+		if ($errorCode !== null) {
+			$errorKey = self::mapErrorCodeToKey($errorCode);
+			if ($errorKey !== null) {
+				$errors = self::loadErrorMessages();
+				if (isset($errors[$errorKey])) {
+					$logMessage   = $errors[$errorKey]['title'];
+					$logSnagTitle = $errors[$errorKey]['title'];
+				}
+			}
+		}
+
+		// Filter out null/empty values from context - only keep useful debugging info.
+		$filteredContext = array_filter(
+			$context,
+			function ($value) {
+				return $value !== null && $value !== '';
+			}
+		);
+
+		self::log($logMessage, 'ERROR', $filteredContext);
+		self::sendToLogSnag($logSnagTitle, 'ERROR', $filteredContext);
+	}
+
+	/**
+	 * Map error code to error key from errors.php.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string $errorCode Error code constant.
+	 * @return string|null Error key or null.
+	 */
+	private static function mapErrorCodeToKey(string $errorCode): ?string
+	{
+		// Map SVGConverter error codes to errors.php keys.
+		switch ($errorCode) {
+			case 'too_large':
+				return 'too_large';
+			case 'empty':
+				return 'empty_input';
+			case 'invalid_root':
+			case 'malformed_xml':
+			case 'invalid_attribute':
+			case 'nesting_too_deep':
+			case 'xml_parse_error':
+				return 'invalid_svg';
+			default:
+				return 'server_error';
+		}
+	}
+
+	/**
+	 * Load error messages from errors.php.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string,array<string,string>>
+	 */
+	private static function loadErrorMessages(): array
+	{
+		static $errors = null;
+		if ($errors === null) {
+			$errorsPath = __DIR__ . '/../functions/errors.php';
+			if (file_exists($errorsPath)) {
+				$errors = include $errorsPath;
+			} else {
+				$errors = [];
+			}
+		}
+		return $errors;
 	}
 
 	/**
 	 * Log a warning message.
 	 *
-	 * @param string $message The warning message.
-	 * @param array  $context Additional context data.
+	 * @since 1.0.0
 	 *
-	 * @since  1.0.0
+	 * @param  string $message Warning message.
+	 * @param  array  $context Extra context.
 	 * @return void
 	 */
 	public static function warning(string $message, array $context = []): void
@@ -165,10 +286,10 @@ class Logger
 	/**
 	 * Log an info message.
 	 *
-	 * @param string $message The info message.
-	 * @param array  $context Additional context data.
+	 * @since 1.0.0
 	 *
-	 * @since  1.0.0
+	 * @param  string $message Info message.
+	 * @param  array  $context Extra context.
 	 * @return void
 	 */
 	public static function info(string $message, array $context = []): void
@@ -179,10 +300,10 @@ class Logger
 	/**
 	 * Log a debug message.
 	 *
-	 * @param string $message The debug message.
-	 * @param array  $context Additional context data.
+	 * @since 1.0.0
 	 *
-	 * @since  1.0.0
+	 * @param  string $message Debug message.
+	 * @param  array  $context Extra context.
 	 * @return void
 	 */
 	public static function debug(string $message, array $context = []): void
@@ -193,32 +314,40 @@ class Logger
 	/**
 	 * Log an exception with full stack trace.
 	 *
-	 * @param \Throwable $exception The exception to log.
-	 * @param array      $context   Additional context data.
+	 * @since 1.0.0
 	 *
-	 * @since  1.0.0
+	 * @param  \Throwable $exception Exception object.
+	 * @param  array      $context   Extra context.
 	 * @return void
 	 */
 	public static function exception(\Throwable $exception, array $context = []): void
 	{
 		self::init();
-	// existing exception logging logic (unchanged) …
-		self::sendToLogSnag($exception->getMessage(), 'EXCEPTION', [
-                                                                    'file' => $exception->getFile(),
-                                                                    'line' => $exception->getLine(),
-                                                                   ]);
 
+		self::sendToLogSnag(
+			$exception->getMessage(),
+			'EXCEPTION',
+			[
+             'file' => $exception->getFile(),
+             'line' => $exception->getLine(),
+			]
+		);
 
-		$timestamp  = date('Y-m-d H:i:s');
-		$contextStr = '';
-
-		// Sanitize exception message to prevent log injection.
+		$timestamp        = date('Y-m-d H:i:s');
 		$sanitizedMessage = preg_replace('/[\r\n\x00-\x1F\x7F]/', '', $exception->getMessage());
 		$sanitizedFile    = preg_replace('/[\r\n\x00-\x1F\x7F]/', '', $exception->getFile());
-		$sanitizedTrace   = preg_replace('/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/', '', $exception->getTraceAsString());
+		$sanitizedTrace   = preg_replace(
+			'/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/',
+			'',
+			$exception->getTraceAsString()
+		);
 
+		$contextStr = '';
 		if (! empty($context)) {
-			$contextStr = ' | Context: ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+			$contextStr = ' | Context: ' . json_encode(
+				$context,
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+			);
 		}
 
 		$logEntry = sprintf(
@@ -232,35 +361,20 @@ class Logger
 			$sanitizedTrace
 		);
 
-		// Ensure the directory exists and is writable.
 		$logDir = dirname(self::$logFile);
 		if (! is_dir($logDir)) {
 			@mkdir($logDir, 0700, true);
 		}
 
-		// Rotate log file if it exceeds maximum size.
 		self::rotateLogIfNeeded();
 
-		// Write to log file (append mode) with restricted permissions.
 		$result = @file_put_contents(self::$logFile, $logEntry, FILE_APPEND | LOCK_EX);
 
-		// Set restrictive file permissions (owner read/write only).
 		if ($result !== false && file_exists(self::$logFile)) {
 			@chmod(self::$logFile, 0600);
 		}
 
-		// If writing failed, try to log to PHP error log as fallback.
-		if ($result === false) {
-			$error = error_get_last();
-			error_log(
-				sprintf(
-					'Logger failed to write to %s: %s. Original exception: %s',
-					self::$logFile,
-					$error['message'] ?? 'Unknown error',
-					$exception->getMessage()
-				)
-			);
-		}
+		// No error_log fallback – same reasoning as in log().
 	}
 
 	/**
@@ -280,12 +394,9 @@ class Logger
 			return;
 		}
 
-		// Create backup filename with timestamp.
 		$backupFile = self::$logFile . '.' . date('Ymd_His') . '.bak';
 
-		// Rename current log file to backup.
 		if (@rename(self::$logFile, $backupFile)) {
-			// Clean up old backup files (keep only the most recent ones).
 			self::cleanupOldBackups();
 		}
 	}
@@ -307,19 +418,20 @@ class Logger
 			return;
 		}
 
-		// Sort by modification time (newest first).
-		usort($backupFiles, function ($a, $b) {
-			$timeA = @filemtime($a);
-			$timeB = @filemtime($b);
+		usort(
+			$backupFiles,
+			function ($a, $b) {
+				$timeA = @filemtime($a);
+				$timeB = @filemtime($b);
 
-			if ($timeA === false || $timeB === false) {
-				return 0;
+				if ($timeA === false || $timeB === false) {
+					return 0;
+				}
+
+				return $timeB <=> $timeA;
 			}
+		);
 
-			return $timeB - $timeA;
-		});
-
-		// Remove oldest backup files beyond the limit.
 		$filesToRemove = array_slice($backupFiles, self::MAX_BACKUP_FILES);
 		foreach ($filesToRemove as $file) {
 			@unlink($file);
@@ -328,9 +440,6 @@ class Logger
 
 	/**
 	 * Get the path to the log file.
-	 *
-	 * Note: This method should only be used for debugging purposes.
-	 * The log file path should not be exposed to end users.
 	 *
 	 * @since  1.0.0
 	 * @return string
@@ -344,70 +453,115 @@ class Logger
 	/**
 	 * Send an event to LogSnag.
 	 *
-	 * @param string $title   Event title or message.
-	 * @param string $level   Severity level.
-	 * @param array  $context Extra context data.
+	 * Cloudways-safe: no getenv/putenv; all failures go to debug.log only.
 	 *
-	 * @since  1.0.0
+	 * @since 1.0.0
+	 *
+	 * @param  string $title   Event title or message.
+	 * @param  string $level   Severity level.
+	 * @param  array  $context Extra context data.
 	 * @return void
 	 */
 	private static function sendToLogSnag(string $title, string $level = 'INFO', array $context = []): void
 	{
+		static $inLogSnag = false;
+
+		if ($inLogSnag) {
+			return;
+		}
+
+		$inLogSnag = true;
+
 		try {
-			// Load .env if not already loaded
-			$envPath = dirname(__DIR__, 2) . '/.env';
-			if (file_exists($envPath)) {
-				foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-					if (str_starts_with(trim($line), '#') || ! str_contains($line, '=')) {
-						continue;
-					}
-					[
-					 $name,
-					 $value,
-					] = array_map('trim', explode('=', $line, 2));
-					if ($name !== '' && ! getenv($name)) {
-						putenv(sprintf('%s=%s', $name, $value));
-					}
-				}
-			}
-
-			$token = getenv('LOGSNAG_TOKEN');
-			if (empty($token)) {
-				return; // Skip silently if no token defined
-			}
-
-			$server = $_SERVER['SERVER_NAME'] ?? '';
-			if ($server === '') {
-				// Likely CLI/cron; skip silently.
+			// Do not send from CLI scripts – no need for remote logging there.
+			if (php_sapi_name() === 'cli') {
+				$inLogSnag = false;
 				return;
 			}
 
+			$token = self::getEnv('LOGSNAG_TOKEN');
+			if ($token === null || $token === '') {
+				$inLogSnag = false;
+				return;
+			}
+
+			// Disable SSL verification on local, enable on production.
+			$host    = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+			$isLocal = str_ends_with($host, '.test') ||
+				str_ends_with($host, '.local') ||
+				$host === 'localhost' ||
+				preg_match('/^127\.0\.0\./', $host);
+
+			if ($isLocal) {
+				$verifyPeer = false;
+				$verifyHost = 0;
+			} else {
+				$verifyPeer = true;
+				$verifyHost = 2;
+			}
+
 			$payload = [
-                        'project' => 'svgready',
-                        'channel' => 'error',
+                        'project' => 'webtions',
+                        'channel' => 'svgready',
                         'event'   => $title,
                         'notify'  => in_array($level, ['ERROR', 'EXCEPTION'], true),
                        ];
 
 			if (! empty($context)) {
-				$payload['description'] = json_encode(
-                    $context,
-                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
-				);
+				$description = [];
+				$tags        = [];
+
+				foreach ($context as $key => $value) {
+					$tagKey = strtolower(preg_replace('/[^a-z0-9]+/', '-', (string) $key));
+
+					if (is_scalar($value)) {
+						// LogSnag tag values are limited to 160 characters.
+						// Truncate svg_input specifically for tags (debug.log keeps full 500 chars).
+						if ($key === 'svg_input' && is_string($value) && strlen($value) > 160) {
+							$tags[$tagKey] = substr($value, 0, 157) . '...';
+						} else {
+							$tags[$tagKey] = $value;
+						}
+					} else {
+						$description[] = sprintf(
+							'%s: %s',
+							$key,
+							json_encode(
+								$value,
+								JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+							)
+						);
+					}
+				}
+
+				if (! empty($description)) {
+					$payload['description'] = implode(' | ', $description);
+				}
+
+				if (! empty($tags)) {
+					$payload['tags'] = $tags;
+				}
 			}
 
 			$ch = curl_init('https://api.logsnag.com/v1/log');
-			curl_setopt_array($ch, [
-                                    CURLOPT_POST           => true,
-                                    CURLOPT_HTTPHEADER     => [
-                                                               'Content-Type: application/json',
-                                                               'Authorization: Bearer ' . $token,
-                                                              ],
-                                    CURLOPT_POSTFIELDS     => json_encode($payload),
-                                    CURLOPT_RETURNTRANSFER => true,
-                                    CURLOPT_FOLLOWLOCATION => true,
-                                    CURLOPT_TIMEOUT        => 5,
-                                   ]);
+			curl_setopt_array(
+				$ch,
+				[
+                 CURLOPT_POST           => true,
+                 CURLOPT_HTTPHEADER     => [
+                                            'Content-Type: application/json',
+                                            'Authorization: Bearer ' . $token,
+                                           ],
+                 CURLOPT_POSTFIELDS     => json_encode($payload),
+                 CURLOPT_RETURNTRANSFER => true,
+                 CURLOPT_FOLLOWLOCATION => true,
+                 CURLOPT_TIMEOUT        => 5,
+				 CURLOPT_ENCODING       => '',
+				 CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+				 CURLOPT_SSL_VERIFYPEER => $verifyPeer,
+				 CURLOPT_SSL_VERIFYHOST => $verifyHost,
+				]
+			);
 
 			$response = curl_exec($ch);
 			$errno    = curl_errno($ch);
@@ -415,25 +569,31 @@ class Logger
 			$status   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			curl_close($ch);
 
-			// Success codes: 2xx
 			if ($errno || $status < 200 || $status >= 300) {
-				Logger::warning('LogSnag post failed', [
-                                                        'httpStatus' => $status,
-                                                        'curlErrno'  => $errno,
-                                                        'curlError'  => $error,
-                                                        'response'   => is_string($response) ? trim($response) : null,
-                                                       ]);
-
-				error_log(sprintf(
-					'[LogSnag] Failed (HTTP %d, errno %d): %s | resp=%s',
-					$status,
-					$errno,
-					$error ?? 'n/a',
-					is_string($response) ? substr($response, 0, 500) : 'n/a'
-				));
+				// Local only – no recursion (warning() does not call sendToLogSnag()).
+				self::warning(
+					'LogSnag post failed',
+					[
+                     'httpStatus' => $status,
+                     'curlErrno'  => $errno,
+                     'curlError'  => $error,
+                     'response'   => is_string($response) ? trim($response) : null,
+					]
+				);
 			}
+			// Success: don't log - we only care about failures.
 		} catch (\Throwable $e) {
-			Logger::exception($e, ['where' => 'sendToLogSnag']);
+			// IMPORTANT: use log() directly to avoid recursion.
+			self::log(
+				'LogSnag fatal error: ' . $e->getMessage(),
+				'ERROR',
+				[
+                 'file' => $e->getFile(),
+                 'line' => $e->getLine(),
+				]
+			);
+		} finally {
+			$inLogSnag = false;
 		}
 	}
 }
